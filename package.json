@@ -1,0 +1,37 @@
+{
+  "name": "modalmodules",
+  "version": "0.1.0",
+  "description": "Heuristic modal/popup removal for browser DOM and server-side HTML",
+  "type": "module",
+  "main": "./src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./server": "./src/api/server.js",
+    "./browser": "./src/api/browser.js",
+    "./http": "./src/server/HttpServer.js"
+  },
+  "bin": {
+    "modalmodules": "./bin/modalmodules.js"
+  },
+  "scripts": {
+    "start": "node bin/modalmodules.js serve",
+    "test": "node --test test/*.test.js"
+  },
+  "dependencies": {
+    "cheerio": "^1.0.0"
+  },
+  "peerDependencies": {
+    "playwright": ">=1.40.0"
+  },
+  "peerDependenciesMeta": {
+    "playwright": {
+      "optional": true
+    }
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "devDependencies": {
+    "jsdom": "^29.1.1"
+  }
+}

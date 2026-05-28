@@ -1,0 +1,1407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>modalmodules — implementation docs</title>
+<style>
+  :root {
+    --fg: #1f2328;
+    --fg-muted: #59636e;
+    --bg: #ffffff;
+    --bg-soft: #f6f8fa;
+    --border: #d1d9e0;
+    --border-soft: #eaeef2;
+    --accent: #0969da;
+    --accent-soft: #ddf4ff;
+    --code-bg: #f6f8fa;
+    --kw: #cf222e;
+    --str: #0a3069;
+    --com: #6e7781;
+    --num: #0550ae;
+    --get: #1f883d;
+    --post: #bf3989;
+    --shadow: 0 1px 0 rgba(31,35,40,.04);
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+    color: var(--fg);
+    background: var(--bg);
+  }
+  .layout {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  aside {
+    position: sticky;
+    top: 0;
+    align-self: start;
+    height: 100vh;
+    overflow-y: auto;
+    padding: 32px 20px;
+    border-right: 1px solid var(--border-soft);
+    background: var(--bg-soft);
+  }
+  aside h1 {
+    font-size: 18px;
+    margin: 0 0 4px;
+    letter-spacing: -0.01em;
+  }
+  aside .tag {
+    display: inline-block;
+    font-size: 11px;
+    color: var(--fg-muted);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1px 6px;
+    margin-bottom: 18px;
+  }
+  aside nav { font-size: 14px; }
+  aside nav ol {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    counter-reset: section;
+  }
+  aside nav li { margin: 2px 0; }
+  aside nav a {
+    display: block;
+    padding: 4px 10px;
+    color: var(--fg-muted);
+    text-decoration: none;
+    border-radius: 6px;
+    counter-increment: section;
+  }
+  aside nav a::before {
+    content: counter(section) ". ";
+    color: var(--border);
+    margin-right: 4px;
+  }
+  aside nav a:hover { background: var(--bg); color: var(--fg); }
+  aside nav a.active {
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-weight: 600;
+  }
+  main { padding: 48px 56px; max-width: 880px; }
+  h2 {
+    font-size: 28px;
+    font-weight: 600;
+    margin: 56px 0 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border-soft);
+    letter-spacing: -0.015em;
+  }
+  h2:first-of-type { margin-top: 0; }
+  h3 {
+    font-size: 18px;
+    font-weight: 600;
+    margin: 28px 0 8px;
+  }
+  p { margin: 8px 0 16px; }
+  p.lead { font-size: 17px; color: var(--fg-muted); }
+  code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.875em;
+    background: var(--code-bg);
+    border: 1px solid var(--border-soft);
+    padding: 1px 5px;
+    border-radius: 4px;
+  }
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--border-soft);
+    border-radius: 8px;
+    padding: 14px 16px;
+    overflow-x: auto;
+    margin: 12px 0 20px;
+    font-size: 13.5px;
+    line-height: 1.55;
+    box-shadow: var(--shadow);
+  }
+  pre code {
+    background: none;
+    border: none;
+    padding: 0;
+    font-size: inherit;
+  }
+  pre .kw { color: var(--kw); }
+  pre .str { color: var(--str); }
+  pre .com { color: var(--com); font-style: italic; }
+  pre .num { color: var(--num); }
+  pre .fn { color: #8250df; }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 12px 0 20px;
+    font-size: 14px;
+  }
+  th, td {
+    text-align: left;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border-soft);
+    vertical-align: top;
+  }
+  th { background: var(--bg-soft); font-weight: 600; }
+  tr:last-child td { border-bottom: none; }
+  .method {
+    display: inline-block;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 4px;
+    letter-spacing: 0.02em;
+    color: white;
+  }
+  .method.get { background: var(--get); }
+  .method.post { background: var(--post); }
+  .callout {
+    border-left: 3px solid var(--accent);
+    background: var(--accent-soft);
+    padding: 12px 16px;
+    border-radius: 0 8px 8px 0;
+    margin: 16px 0 20px;
+    font-size: 14px;
+  }
+  .callout.warn {
+    border-left-color: #bf8700;
+    background: #fff8c5;
+  }
+  .callout strong { display: block; margin-bottom: 4px; }
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin: 16px 0 20px;
+  }
+  .card {
+    border: 1px solid var(--border-soft);
+    border-radius: 8px;
+    padding: 16px 18px;
+    background: var(--bg);
+  }
+  .card h4 { margin: 0 0 6px; font-size: 14px; font-weight: 600; }
+  .card p { margin: 0; font-size: 13.5px; color: var(--fg-muted); }
+  a.h-anchor {
+    color: var(--accent);
+    text-decoration: none;
+  }
+  a.h-anchor:hover { text-decoration: underline; }
+  ul, ol { padding-left: 24px; }
+  li { margin: 4px 0; }
+  hr { border: none; border-top: 1px solid var(--border-soft); margin: 32px 0; }
+  footer {
+    margin-top: 64px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border-soft);
+    color: var(--fg-muted);
+    font-size: 13px;
+  }
+  @media (max-width: 800px) {
+    .layout { grid-template-columns: 1fr; }
+    aside { position: static; height: auto; border-right: none; border-bottom: 1px solid var(--border-soft); }
+    main { padding: 24px; }
+    .grid-2 { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+
+<aside>
+  <h1>modalmodules</h1>
+  <span class="tag">v0.1.0</span>
+  <nav>
+    <ol>
+      <li><a href="#overview">Overview</a></li>
+      <li><a href="#architecture">Architecture</a></li>
+      <li><a href="#quick-start">Quick start</a></li>
+      <li><a href="#http-api">HTTP API</a></li>
+      <li><a href="#library-api">Library API (Node)</a></li>
+      <li><a href="#browser-api">Browser API</a></li>
+      <li><a href="#preferences">User preferences</a></li>
+      <li><a href="#rules-config">Rules config (JSON)</a></li>
+      <li><a href="#add-detector">Adding a detector</a></li>
+      <li><a href="#python-client">Calling from Python</a></li>
+      <li><a href="#js-client">Calling from JS</a></li>
+      <li><a href="#delayed-popups">Delayed / scroll popups</a></li>
+      <li><a href="#cookie-vendors">Cookie vendor coverage</a></li>
+      <li><a href="#auto-accept">Auto-accept cookies</a></li>
+      <li><a href="#auto-accept-url">Server-side render + accept</a></li>
+      <li><a href="#scroll-cleanup">Scroll lock + orphan cleanup</a></li>
+      <li><a href="#logging">Logging</a></li>
+      <li><a href="#deployment">Deployment notes</a></li>
+      <li><a href="#project-layout">Project layout</a></li>
+    </ol>
+  </nav>
+</aside>
+
+<main>
+
+<h2 id="overview">Overview</h2>
+<p class="lead">
+  modalmodules removes popups, modal dialogs, cookie banners, and overlay nags
+  from web pages. It works on raw HTML server-side and on the live DOM in a
+  browser, driven by the same JSON rule set.
+</p>
+<p>
+  Two integration paths: embed the Node library directly, or run it as an HTTP
+  service that any project (Python, JS, anything that speaks HTTP) can call.
+</p>
+<div class="grid-2">
+  <div class="card">
+    <h4>Heuristic detection</h4>
+    <p>ARIA dialog roles, class-name patterns, full-viewport overlays. No per-site rules required.</p>
+  </div>
+  <div class="card">
+    <h4>JSON-configurable</h4>
+    <p>Add patterns, tune thresholds, or disable detectors by editing one JSON file. No code changes.</p>
+  </div>
+  <div class="card">
+    <h4>Two adapters, one core</h4>
+    <p>Cheerio for server HTML, DOM for live browser pages. Detectors are written once.</p>
+  </div>
+  <div class="card">
+    <h4>HTTP-ready</h4>
+    <p>Built-in service with CORS, body limits, Bearer auth, and a URL-fetch endpoint.</p>
+  </div>
+</div>
+
+<h2 id="architecture">Architecture</h2>
+<p>
+  Three layers separated by intent, plus the HTTP wrapper on top.
+</p>
+<pre><code><span class="com">┌──────────────────────────────────────────────────────────┐</span>
+<span class="com">│  HTTP API     POST /v1/clean   POST /v1/clean-url        │</span>
+<span class="com">│               (CORS, auth, body limits, URL fetch)       │</span>
+<span class="com">└──────────────────────────────┬───────────────────────────┘</span>
+<span class="com">┌──────────────────────────────▼───────────────────────────┐</span>
+<span class="com">│  Service                                                 │</span>
+<span class="com">│    ModalRemovalService.run(input)                        │</span>
+<span class="com">│      ↳ pulls rules from Repository                       │</span>
+<span class="com">│      ↳ walks tree via Adapter                            │</span>
+<span class="com">│      ↳ asks DetectionEngine to evaluate each node        │</span>
+<span class="com">│      ↳ removes matches, returns report                   │</span>
+<span class="com">└────────┬───────────────────┬─────────────────┬───────────┘</span>
+         │                   │                 │
+<span class="com">    ┌────▼──────┐   ┌────────▼───────┐  ┌──────▼──────────┐</span>
+<span class="com">    │ Repository │  │ DetectionEngine │  │ NodeAdapter    │</span>
+<span class="com">    │ (JSON file)│  │ (runs detectors)│  │ (Cheerio | DOM)│</span>
+<span class="com">    └───────────┘   └────────┬───────┘  └────────────────┘</span>
+                              │
+<span class="com">                  ┌───────────▼──────────┐</span>
+<span class="com">                  │ Detectors             │</span>
+<span class="com">                  │  aria-dialog          │</span>
+<span class="com">                  │  class-name-pattern   │</span>
+<span class="com">                  │  full-viewport-overlay│</span>
+<span class="com">                  │  (+ your own)         │</span>
+<span class="com">                  └───────────────────────┘</span>
+</code></pre>
+
+<h3>Why this split</h3>
+<ul>
+  <li><strong>Detectors</strong> are pure functions of <code>(node, config)</code>. They never see cheerio or the DOM directly.</li>
+  <li><strong>Adapters</strong> implement a single <code>NodeAdapter</code> shape (<code>getAttr</code>, <code>getClasses</code>, <code>matches</code>, <code>remove</code>, …) so the same detector runs everywhere.</li>
+  <li><strong>Repository</strong> sources the rules. Default is bundled JSON; swap for DB/HTTP/per-tenant without touching anything else.</li>
+  <li><strong>Service</strong> is the only thing the HTTP layer or library callers talk to.</li>
+</ul>
+
+<h2 id="quick-start">Quick start</h2>
+<h3>Install dependencies</h3>
+<pre><code><span class="kw">npm</span> install</code></pre>
+
+<h3>Run the test suite</h3>
+<pre><code><span class="kw">npm</span> test
+<span class="com"># → 11 tests pass</span></code></pre>
+
+<h3>Start the HTTP service</h3>
+<pre><code><span class="kw">npm</span> start
+<span class="com"># modalmodules listening on http://127.0.0.1:8787</span>
+<span class="com">#   POST /v1/clean       HTML body → cleaned HTML</span>
+<span class="com">#   POST /v1/clean-url   {"url": "..."} → cleaned HTML</span>
+<span class="com">#   GET  /health</span></code></pre>
+
+<h3>Hit it</h3>
+<pre><code><span class="kw">curl</span> -X POST http://127.0.0.1:8787/v1/clean \
+  -d <span class="str">'&lt;html&gt;&lt;body&gt;&lt;main&gt;Article&lt;/main&gt;&lt;div role="dialog" aria-modal="true"&gt;x&lt;/div&gt;&lt;/body&gt;&lt;/html&gt;'</span></code></pre>
+
+<h2 id="http-api">HTTP API</h2>
+<p>All POST endpoints accept up to <strong>10 MB</strong> request bodies. Responses are JSON unless <code>?format=html</code> is set.</p>
+
+<table>
+  <thead><tr><th>Method</th><th>Path</th><th>Body</th><th>Returns</th></tr></thead>
+  <tbody>
+    <tr><td><span class="method get">GET</span></td><td><code>/health</code></td><td>—</td><td><code>{status:"ok"}</code></td></tr>
+    <tr><td><span class="method post">POST</span></td><td><code>/v1/clean</code></td><td>raw HTML</td><td><code>{html, removed[], cleanup[], ms}</code></td></tr>
+    <tr><td><span class="method post">POST</span></td><td><code>/v1/clean?format=html</code></td><td>raw HTML</td><td>raw HTML + <code>x-modals-removed</code>, <code>x-cleanup-actions</code>, <code>x-elapsed-ms</code> headers</td></tr>
+    <tr><td><span class="method post">POST</span></td><td><code>/v1/clean-url</code></td><td><code>{"url": "..."}</code></td><td><code>{html, removed[], cleanup[], sourceUrl, ms}</code></td></tr>
+    <tr><td><span class="method post">POST</span></td><td><code>/v1/auto-accept-url</code></td><td><code>{"url": "...", "cookies"?: "accept|decline", "waitMs"?: 1500}</code></td><td><code>{html, clicked[], removed[], cleanup[], sourceUrl, renderMs, ms}</code> <em>(requires Playwright peer dep)</em></td></tr>
+  </tbody>
+</table>
+
+<h3>Per-request query overrides</h3>
+<p>All <code>POST /v1/*</code> routes accept these query params to override the server's loaded <code>user-preferences.json</code> for a single call:</p>
+<table>
+  <thead><tr><th>Query param</th><th>Values</th><th>Effect</th></tr></thead>
+  <tbody>
+    <tr><td><code>popups</code></td><td><code>remove</code> | <code>ignore</code></td><td>Override <code>preferences.popups</code></td></tr>
+    <tr><td><code>cookies</code></td><td><code>accept</code> | <code>decline</code> | <code>remove</code> | <code>ignore</code></td><td>Override <code>preferences.cookies</code> (only <code>remove</code>/<code>ignore</code> meaningful for static HTML)</td></tr>
+    <tr><td><code>authModals</code> (or <code>auth</code>)</td><td><code>remove</code> | <code>ignore</code></td><td>Override <code>preferences.authModals</code></td></tr>
+    <tr><td><code>format</code></td><td><code>html</code></td><td>Return raw HTML instead of JSON envelope (<code>/v1/clean</code> only)</td></tr>
+  </tbody>
+</table>
+<pre><code><span class="kw">curl</span> -X POST <span class="str">'http://localhost:8787/v1/clean?popups=ignore&amp;authModals=remove'</span> -d <span class="str">'&lt;html&gt;...&lt;/html&gt;'</span></code></pre>
+
+<h3>Response shape (clean)</h3>
+<pre><code>{
+  <span class="str">"html"</span>: <span class="str">"&lt;html&gt;...&lt;/html&gt;"</span>,
+  <span class="str">"ms"</span>: <span class="num">14</span>,
+  <span class="str">"removed"</span>: [
+    {
+      <span class="str">"selector"</span>:   <span class="str">"div#onetrust-banner-sdk"</span>,
+      <span class="str">"category"</span>:   <span class="str">"cookie"</span>,                    <span class="com">// "cookie" | "auth" | "newsletter" | "paywall" | "generic"</span>
+      <span class="str">"kind"</span>:       <span class="str">"cookie banner"</span>,
+      <span class="str">"vendor"</span>:     <span class="str">"OneTrust"</span>,                  <span class="com">// null if not vendor-identified</span>
+      <span class="str">"score"</span>:      <span class="num">1.43</span>,
+      <span class="str">"definitive"</span>: <span class="kw">false</span>,
+      <span class="str">"preview"</span>:    <span class="str">"We use cookies to improve…"</span>,    <span class="com">// first ~60 chars of text content</span>
+      <span class="str">"signals"</span>: [
+        { <span class="str">"id"</span>: <span class="str">"selector-match"</span>,
+          <span class="str">"reason"</span>: <span class="str">"OneTrust signature (#onetrust-consent-sdk, …)"</span>,
+          <span class="str">"confidence"</span>: <span class="num">0.95</span> }
+      ]
+    }
+  ],
+  <span class="str">"cleanup"</span>: [
+    { <span class="str">"action"</span>: <span class="str">"unlock-class"</span>,   <span class="str">"node"</span>: <span class="str">"body"</span>,                  <span class="str">"value"</span>: <span class="str">"modal-open"</span> },
+    { <span class="str">"action"</span>: <span class="str">"unlock-style"</span>,   <span class="str">"node"</span>: <span class="str">"body"</span>,                  <span class="str">"value"</span>: <span class="str">"overflow"</span> },
+    { <span class="str">"action"</span>: <span class="str">"remove-orphan"</span>,  <span class="str">"node"</span>: <span class="str">"div.modal-backdrop"</span>,   <span class="str">"value"</span>: <span class="str">".modal-backdrop"</span> },
+    { <span class="str">"action"</span>: <span class="str">"inject-style"</span>,   <span class="str">"node"</span>: <span class="str">"head"</span>,                  <span class="str">"value"</span>: <span class="str">"scroll-unlock"</span> }
+  ]
+}</code></pre>
+
+<h3>Authentication</h3>
+<p>Off by default. Set an env var to require Bearer tokens on <code>/v1/*</code> routes (the health check stays open):</p>
+<pre><code>MODALMODULES_API_KEY=secret-123 <span class="kw">npm</span> start
+
+<span class="com"># Callers must send:</span>
+<span class="com">#   Authorization: Bearer secret-123</span></code></pre>
+
+<h3>CLI flags</h3>
+<pre><code><span class="kw">npm</span> start -- --port <span class="num">9000</span> --host <span class="num">0.0</span>.0.0
+<span class="com"># or directly:</span>
+<span class="kw">node</span> bin/modalmodules.js serve --port <span class="num">9000</span></code></pre>
+
+<h2 id="library-api">Library API (Node)</h2>
+<p>Skip the HTTP layer when calling from another Node project.</p>
+
+<h3>Basic usage</h3>
+<pre><code><span class="kw">import</span> { removeModalsFromHTML } <span class="kw">from</span> <span class="str">'modalmodules/server'</span>;
+
+<span class="kw">const</span> { html, removed } = <span class="kw">await</span> <span class="fn">removeModalsFromHTML</span>(rawHtml);</code></pre>
+
+<h3>With a custom rules file</h3>
+<pre><code><span class="kw">const</span> { html, removed } = <span class="kw">await</span> <span class="fn">removeModalsFromHTML</span>(rawHtml, {
+  rulesPath: <span class="str">'./my-rules.json'</span>,
+});</code></pre>
+
+<h3>With a custom repository (DB-backed, per-tenant, etc.)</h3>
+<pre><code><span class="kw">import</span> {
+  ModalRemovalService,
+  createCheerioAdapter,
+} <span class="kw">from</span> <span class="str">'modalmodules'</span>;
+
+<span class="kw">const</span> repo = {
+  <span class="fn">async</span> <span class="fn">getRules</span>() { <span class="kw">return</span> <span class="kw">await</span> <span class="fn">loadFromDB</span>(tenantId); },
+};
+
+<span class="kw">const</span> service = <span class="kw">new</span> <span class="fn">ModalRemovalService</span>({
+  ruleRepository: repo,
+  adapterFactory: createCheerioAdapter,
+});
+
+<span class="kw">const</span> { removed, output } = <span class="kw">await</span> service.<span class="fn">run</span>(rawHtml);</code></pre>
+
+<h3>Installing locally</h3>
+<p>Until you publish to npm, point at the folder or git:</p>
+<pre><code><span class="kw">npm</span> install file:../ModalModules
+<span class="com"># or</span>
+<span class="kw">npm</span> install git+https://github.com/you/ModalModules.git</code></pre>
+
+<h2 id="browser-api">Browser API</h2>
+<p>Mutates the live DOM in place. Pass the rules object in at call time — there's no filesystem in the browser.</p>
+
+<pre><code><span class="kw">import</span> { removeModals } <span class="kw">from</span> <span class="str">'modalmodules/browser'</span>;
+<span class="kw">import</span> rules <span class="kw">from</span> <span class="str">'modalmodules/spec/rules.default.json'</span>;
+
+<span class="kw">const</span> { removed } = <span class="kw">await</span> <span class="fn">removeModals</span>(document, { rules });
+console.<span class="fn">log</span>(<span class="str">`Removed </span>${removed.length}<span class="str"> modals`</span>);</code></pre>
+
+<p>Vite, Webpack, Rollup, and Parcel all support JSON imports out of the box.</p>
+
+<h2 id="preferences">User preferences</h2>
+
+<p>
+  End-user control over <em>what to do</em> when each modal category is
+  detected. Stored in <code>spec/user-preferences.json</code> (separate from
+  <code>rules.default.json</code> which describes <em>how to detect</em>).
+</p>
+
+<pre><code>{
+  <span class="str">"version"</span>: <span class="num">1</span>,
+  <span class="str">"popups"</span>:     <span class="str">"remove"</span>,    <span class="com">// "remove" | "ignore"</span>
+  <span class="str">"cookies"</span>:    <span class="str">"accept"</span>,    <span class="com">// "accept" | "decline" | "remove" | "ignore"</span>
+  <span class="str">"authModals"</span>: <span class="str">"remove"</span>     <span class="com">// "remove" | "ignore"</span>
+}</code></pre>
+
+<h3>Categories</h3>
+<table>
+  <thead><tr><th>Category</th><th>What it covers</th><th>Pref key</th><th>Valid values</th></tr></thead>
+  <tbody>
+    <tr><td>Cookies</td><td>OneTrust, Cookiebot, Didomi, CookieHub, and 17+ other consent vendors; generic <code>cookie-banner</code>/<code>consent</code> classes</td><td><code>cookies</code></td><td><code>accept</code>, <code>decline</code>, <code>remove</code>, <code>ignore</code></td></tr>
+    <tr><td>Auth modals</td><td>Login, sign-up, registration, "Create Account" dialogs. Classes: <code>.login-modal</code>, <code>.signup-modal</code>, <code>.create-account-popup</code>, etc. ARIA dialogs whose text contains "Create Account" / "Sign in" / "Register" are auto-classified as auth.</td><td><code>authModals</code></td><td><code>remove</code>, <code>ignore</code></td></tr>
+    <tr><td>Popups (everything else)</td><td>Newsletter signups, exit-intent overlays, paywalls, generic modal nags</td><td><code>popups</code></td><td><code>remove</code>, <code>ignore</code></td></tr>
+  </tbody>
+</table>
+
+<h3>Cookie modes explained</h3>
+<table>
+  <thead><tr><th>Mode</th><th>Behavior</th><th>Where it works</th></tr></thead>
+  <tbody>
+    <tr><td><code>accept</code></td><td>Clicks the site's Accept button. Site stores consent properly, releases scroll lock itself.</td><td>Browser only (requires JS execution)</td></tr>
+    <tr><td><code>decline</code></td><td>Clicks the site's Reject/Decline button. Site stores rejected state.</td><td>Browser only</td></tr>
+    <tr><td><code>remove</code></td><td>Hard-removes the banner from DOM/HTML. <strong>Consent NOT recorded</strong> — banner reappears next visit.</td><td>Both server (<code>/v1/clean</code>) and browser</td></tr>
+    <tr><td><code>ignore</code></td><td>Leaves cookie banner alone.</td><td>Both</td></tr>
+  </tbody>
+</table>
+
+<h3>How to set preferences</h3>
+
+<p><strong>HTTP server:</strong> edit <code>spec/user-preferences.json</code> (server reads it at startup) OR point at a custom file:</p>
+<pre><code><span class="kw">npm</span> start -- --preferences /path/to/my-prefs.json
+<span class="kw">MODALMODULES_PREFERENCES</span>=/path/to/my-prefs.json npm start</code></pre>
+
+<p><strong>Per-request override via query params:</strong></p>
+<pre><code><span class="kw">curl</span> -X POST <span class="str">'http://localhost:8787/v1/clean?popups=ignore&amp;cookies=decline&amp;authModals=ignore'</span> -d <span class="str">'&lt;html&gt;...&lt;/html&gt;'</span></code></pre>
+
+<p><strong>Library API:</strong> pass <code>preferences</code> object directly:</p>
+<pre><code><span class="kw">const</span> { html, removed } = <span class="kw">await</span> <span class="fn">removeModalsFromHTML</span>(rawHtml, {
+  preferences: { popups: <span class="str">'ignore'</span>, cookies: <span class="str">'remove'</span>, authModals: <span class="str">'remove'</span> },
+});</code></pre>
+
+<p>Or load from file:</p>
+<pre><code><span class="kw">await</span> <span class="fn">removeModalsFromHTML</span>(rawHtml, {
+  preferencesPath: <span class="str">'./my-prefs.json'</span>,
+});</code></pre>
+
+<p><strong>Browser API:</strong></p>
+<pre><code><span class="kw">import</span> preferences <span class="kw">from</span> <span class="str">'modalmodules/spec/user-preferences.json'</span>;
+
+<span class="kw">await</span> <span class="fn">removeModals</span>(document, { rules, preferences });
+<span class="com">// or for a one-off override:</span>
+<span class="kw">await</span> <span class="fn">removeModals</span>(document, {
+  rules,
+  preferences: { popups: <span class="str">'remove'</span>, cookies: <span class="str">'decline'</span>, authModals: <span class="str">'ignore'</span> },
+});</code></pre>
+
+<div class="callout">
+  <strong>Returned <code>removed[]</code> entries now include category info</strong>
+  Each entry has <code>category</code> (<code>'cookie' | 'auth' | 'newsletter' | 'paywall' | 'generic'</code>),
+  <code>kind</code> (human label like <code>"cookie banner"</code> or <code>"auth/login modal (ARIA)"</code>),
+  and <code>vendor</code> (e.g. <code>"OneTrust"</code> when known).
+  Useful for filtering/reporting downstream.
+</div>
+
+<h2 id="rules-config">Rules config (JSON)</h2>
+<p>
+  All detection behavior is driven by <code>spec/rules.default.json</code>.
+  The schema is in <code>spec/rules.schema.json</code>.
+</p>
+
+<h3>Anatomy</h3>
+<pre><code>{
+  <span class="str">"version"</span>: <span class="num">1</span>,
+  <span class="str">"candidateSelector"</span>: <span class="str">"[role=dialog], [class*=modal], [class*=popup], ..."</span>,
+  <span class="str">"detectors"</span>: [
+    {
+      <span class="str">"id"</span>: <span class="str">"aria-dialog"</span>,
+      <span class="str">"enabled"</span>: <span class="kw">true</span>,
+      <span class="str">"weight"</span>: <span class="num">1.5</span>,
+      <span class="str">"config"</span>: {}
+    },
+    {
+      <span class="str">"id"</span>: <span class="str">"class-name-pattern"</span>,
+      <span class="str">"enabled"</span>: <span class="kw">true</span>,
+      <span class="str">"weight"</span>: <span class="num">1.2</span>,
+      <span class="str">"config"</span>: {
+        <span class="str">"patterns"</span>: [
+          { <span class="str">"pattern"</span>: <span class="str">"(^|[\\s_-])modal($|[\\s_-])"</span>, <span class="str">"confidence"</span>: <span class="num">0.9</span> },
+          { <span class="str">"pattern"</span>: <span class="str">"cookie[-_]?(banner|consent|notice|bar)"</span>, <span class="str">"confidence"</span>: <span class="num">0.9</span> }
+        ]
+      }
+    }
+  ],
+  <span class="str">"decision"</span>: { <span class="str">"minScore"</span>: <span class="num">1.0</span> },
+  <span class="str">"preserve"</span>: { <span class="str">"selectors"</span>: [<span class="str">"[data-modalmodules-keep]"</span>] }
+}</code></pre>
+
+<h3>Common tweaks (no code changes)</h3>
+<table>
+  <thead><tr><th>You want to…</th><th>Edit</th></tr></thead>
+  <tbody>
+    <tr><td>Catch a new popup pattern</td><td>Add <code>{"pattern": "qr[-_]?prompt", "confidence": 0.9}</code> to <code>class-name-pattern.patterns</code></td></tr>
+    <tr><td>Be more aggressive</td><td>Lower <code>decision.minScore</code> from <code>1.0</code> to <code>0.7</code></td></tr>
+    <tr><td>Be more conservative</td><td>Raise it to <code>1.4</code></td></tr>
+    <tr><td>Catch lower-z-index overlays</td><td>Lower <code>full-viewport-overlay.config.minZIndex</code></td></tr>
+    <tr><td>Turn a detector off</td><td>Set its <code>enabled: false</code></td></tr>
+    <tr><td>Never remove a specific element</td><td>Add a CSS selector to <code>preserve.selectors</code></td></tr>
+  </tbody>
+</table>
+
+<h3>Scoring</h3>
+<p>
+  For each candidate node, each enabled detector returns
+  <code>{matched, confidence, definitive?}</code>. Score is
+  <code>Σ(weight × confidence)</code> across matched detectors. If the score
+  ≥ <code>decision.minScore</code> the node is removed. Any detector returning
+  <code>definitive: true</code> bypasses the score (used by ARIA when both
+  <code>role="dialog"</code> and <code>aria-modal="true"</code> are present).
+</p>
+
+<h2 id="add-detector">Adding a detector</h2>
+<p>Three steps. Use this when JSON config isn't expressive enough — e.g. you need to check sibling structure, text content, computed dimensions.</p>
+
+<h3>1. Write the detector</h3>
+<pre><code><span class="com">// src/core/detectors/textContent.js</span>
+<span class="kw">export const</span> textContentDetector = {
+  id: <span class="str">'text-content'</span>,
+  <span class="fn">detect</span>(node, config) {
+    <span class="kw">const</span> text = (node.<span class="fn">getAttr</span>(<span class="str">'data-text'</span>) || <span class="str">''</span>).<span class="fn">toLowerCase</span>();
+    <span class="kw">for</span> (<span class="kw">const</span> phrase <span class="kw">of</span> config.phrases || []) {
+      <span class="kw">if</span> (text.<span class="fn">includes</span>(phrase)) {
+        <span class="kw">return</span> { matched: <span class="kw">true</span>, confidence: <span class="num">0.8</span>, reason: <span class="str">`contains "</span>${phrase}<span class="str">"`</span> };
+      }
+    }
+    <span class="kw">return</span> { matched: <span class="kw">false</span> };
+  },
+};</code></pre>
+
+<h3>2. Register it</h3>
+<pre><code><span class="com">// src/core/detectors/index.js</span>
+<span class="kw">import</span> { textContentDetector } <span class="kw">from</span> <span class="str">'./textContent.js'</span>;
+
+<span class="kw">export const</span> detectorRegistry = {
+  <span class="com">// ...existing...</span>
+  [textContentDetector.id]: textContentDetector,
+};</code></pre>
+
+<h3>3. Enable it in rules</h3>
+<pre><code><span class="com">// spec/rules.default.json (or your own JSON)</span>
+{
+  <span class="str">"id"</span>: <span class="str">"text-content"</span>,
+  <span class="str">"enabled"</span>: <span class="kw">true</span>,
+  <span class="str">"weight"</span>: <span class="num">1.0</span>,
+  <span class="str">"config"</span>: { <span class="str">"phrases"</span>: [<span class="str">"subscribe"</span>, <span class="str">"sign up"</span>] }
+}</code></pre>
+
+<div class="callout">
+  <strong>NodeAdapter contract</strong>
+  Your detector receives a <code>node</code> object with: <code>getTag()</code>,
+  <code>getAttr(name)</code>, <code>getClasses()</code>, <code>getStyle(prop)</code>,
+  <code>matches(selector)</code>, <code>getAncestors()</code>. Same interface for
+  cheerio and DOM — write once, run on both.
+</div>
+
+<h2 id="python-client">Calling from Python</h2>
+
+<h3>Send HTML you already have</h3>
+<pre><code><span class="kw">import</span> requests
+
+r = requests.<span class="fn">post</span>(<span class="str">'http://localhost:8787/v1/clean'</span>,
+                  data=raw_html, timeout=<span class="num">30</span>)
+data       = r.<span class="fn">json</span>()
+clean_html = data[<span class="str">'html'</span>]
+removed    = data[<span class="str">'removed'</span>]</code></pre>
+
+<h3>Just hand it a URL</h3>
+<pre><code>r = requests.<span class="fn">post</span>(<span class="str">'http://localhost:8787/v1/clean-url'</span>,
+                  json={<span class="str">'url'</span>: <span class="str">'https://example.com/article'</span>},
+                  timeout=<span class="num">30</span>)
+clean_html = r.<span class="fn">json</span>()[<span class="str">'html'</span>]</code></pre>
+
+<h3>Get raw HTML back (no JSON envelope)</h3>
+<pre><code>r = requests.<span class="fn">post</span>(<span class="str">'http://localhost:8787/v1/clean?format=html'</span>,
+                  data=raw_html)
+clean_html = r.text
+print(<span class="str">'Removed:'</span>, r.headers[<span class="str">'x-modals-removed'</span>])</code></pre>
+
+<h3>With API key auth</h3>
+<pre><code>headers = {<span class="str">'Authorization'</span>: <span class="str">'Bearer secret-123'</span>}
+r = requests.<span class="fn">post</span>(url, data=raw_html, headers=headers)</code></pre>
+
+<h2 id="js-client">Calling from JS</h2>
+
+<h3>From a browser app (CORS is open by default)</h3>
+<pre><code><span class="kw">const</span> res = <span class="kw">await</span> <span class="fn">fetch</span>(<span class="str">'http://localhost:8787/v1/clean'</span>, {
+  method: <span class="str">'POST'</span>,
+  body: dirtyHtml,
+});
+<span class="kw">const</span> { html, removed } = <span class="kw">await</span> res.<span class="fn">json</span>();</code></pre>
+
+<h3>From Node (server-to-server)</h3>
+<pre><code><span class="kw">const</span> res = <span class="kw">await</span> <span class="fn">fetch</span>(<span class="str">'http://localhost:8787/v1/clean-url'</span>, {
+  method: <span class="str">'POST'</span>,
+  headers: { <span class="str">'content-type'</span>: <span class="str">'application/json'</span> },
+  body: <span class="fn">JSON.stringify</span>({ url: <span class="str">'https://example.com'</span> }),
+});
+<span class="kw">const</span> { html } = <span class="kw">await</span> res.<span class="fn">json</span>();</code></pre>
+
+<h2 id="delayed-popups">Delayed / scroll-triggered popups</h2>
+
+<p>
+  Popups that appear after a delay, on scroll, on exit-intent, or after N
+  pageviews fall into two patterns. Both are handled, but with different
+  techniques.
+</p>
+
+<h3>Case A — popup is in the HTML at load (hidden)</h3>
+<p>
+  This is the common case. The site ships <code>&lt;div class="newsletter-popup" style="display:none"&gt;</code>
+  in the initial HTML and a script flips it visible after 5s or 50% scroll.
+  Our detectors match on <code>role</code>, classes, and selectors — <em>not</em>
+  visibility — so the popup is stripped from the HTML before it could ever be
+  revealed. Verified by the <code>hidden-modal.html</code> fixture test.
+</p>
+
+<h3>Case B — popup is created by JavaScript at trigger time</h3>
+<p>Two answers depending on which surface you use.</p>
+
+<h4>Browser (watch mode)</h4>
+<p>
+  Pass <code>watch: true</code> to <code>removeModals</code>. After the initial
+  pass, a <code>MutationObserver</code> watches for new DOM nodes and runs
+  detection on each one as it's added — catching <code>setTimeout</code>
+  popups, scroll-triggered injections, exit-intent overlays, and SPA route
+  changes in real time.
+</p>
+<pre><code><span class="kw">const</span> handle = <span class="kw">await</span> <span class="fn">removeModals</span>(document, {
+  rules,
+  watch: <span class="kw">true</span>,
+  <span class="fn">onRemove</span>: (entry) =&gt; console.<span class="fn">log</span>(<span class="str">'killed'</span>, entry.selector),
+});
+
+<span class="com">// later, when you're done watching:</span>
+handle.<span class="fn">stop</span>();</code></pre>
+
+<div class="callout">
+  <strong>Returned shape in watch mode</strong>
+  <code>{ removed, stop() }</code>. <code>removed</code> is a live array that
+  grows as the observer catches more popups. <code>stop()</code> disconnects
+  the observer.
+</div>
+
+<h4>Server (render-then-clean with Playwright)</h4>
+<p>
+  When the calling project is a scraper or pipeline that only wants clean HTML,
+  render the page in a headless browser so the JS fires, then send the rendered
+  snapshot to <code>/v1/clean</code>.
+</p>
+
+<pre><code><span class="com"># Python</span>
+<span class="kw">from</span> playwright.sync_api <span class="kw">import</span> sync_playwright
+<span class="kw">import</span> requests
+
+<span class="kw">with</span> sync_playwright() <span class="kw">as</span> p:
+    browser = p.chromium.launch()
+    page    = browser.new_page()
+    page.<span class="fn">goto</span>(<span class="str">'https://example.com/article'</span>)
+    page.<span class="fn">wait_for_load_state</span>(<span class="str">'networkidle'</span>)   <span class="com"># let delayed popups appear</span>
+    page.<span class="fn">wait_for_timeout</span>(<span class="num">3000</span>)                  <span class="com"># scroll/timer popups</span>
+    rendered_html = page.<span class="fn">content</span>()
+    browser.<span class="fn">close</span>()
+
+clean = requests.<span class="fn">post</span>(<span class="str">'http://localhost:8787/v1/clean'</span>,
+                      data=rendered_html).<span class="fn">json</span>()
+clean_html = clean[<span class="str">'html'</span>]
+print(<span class="str">'removed:'</span>, len(clean[<span class="str">'removed'</span>]))</code></pre>
+
+<pre><code><span class="com">// Node + Playwright equivalent</span>
+<span class="kw">import</span> { chromium } <span class="kw">from</span> <span class="str">'playwright'</span>;
+
+<span class="kw">const</span> browser = <span class="kw">await</span> chromium.<span class="fn">launch</span>();
+<span class="kw">const</span> page    = <span class="kw">await</span> browser.<span class="fn">newPage</span>();
+<span class="kw">await</span> page.<span class="fn">goto</span>(<span class="str">'https://example.com/article'</span>);
+<span class="kw">await</span> page.<span class="fn">waitForLoadState</span>(<span class="str">'networkidle'</span>);
+<span class="kw">await</span> page.<span class="fn">waitForTimeout</span>(<span class="num">3000</span>);
+<span class="kw">const</span> rendered = <span class="kw">await</span> page.<span class="fn">content</span>();
+<span class="kw">await</span> browser.<span class="fn">close</span>();
+
+<span class="kw">const</span> res = <span class="kw">await</span> <span class="fn">fetch</span>(<span class="str">'http://localhost:8787/v1/clean'</span>, {
+  method: <span class="str">'POST'</span>, body: rendered,
+});
+<span class="kw">const</span> { html, removed } = <span class="kw">await</span> res.<span class="fn">json</span>();</code></pre>
+
+<div class="callout warn">
+  <strong>For scroll-triggered popups specifically</strong>
+  <code>networkidle</code> alone won't trigger a scroll listener. Scroll the
+  page programmatically before snapshotting: <code>page.evaluate(() =&gt; window.scrollTo(0, document.body.scrollHeight))</code>,
+  then wait a beat, then call <code>page.content()</code>.
+</div>
+
+<h2 id="cookie-vendors">Cookie vendor coverage</h2>
+
+<p>
+  Beyond the generic <code>cookie-banner</code> / <code>consent</code> regex
+  patterns, the <code>selector-match</code> detector handles the major consent
+  vendors by their well-known IDs and class signatures:
+</p>
+
+<table>
+  <thead><tr><th>Vendor</th><th>Signature</th></tr></thead>
+  <tbody>
+    <tr><td>OneTrust</td><td><code>#onetrust-consent-sdk</code>, <code>#onetrust-banner-sdk</code>, <code>.optanon-alert-box-wrapper</code></td></tr>
+    <tr><td>Cookiebot</td><td><code>#CybotCookiebotDialog</code></td></tr>
+    <tr><td>Didomi</td><td><code>#didomi-host</code>, <code>#didomi-notice</code>, <code>#didomi-popup</code></td></tr>
+    <tr><td>Usercentrics</td><td><code>#usercentrics-root</code>, <code>.uc-banner</code></td></tr>
+    <tr><td>Quantcast Choice</td><td><code>#qc-cmp2-container</code>, <code>#qc-cmp2-ui</code></td></tr>
+    <tr><td>TrustArc</td><td><code>#truste-consent-track</code>, <code>.truste_box_overlay</code></td></tr>
+    <tr><td>Osano</td><td><code>.osano-cm-window</code>, <code>.osano-cm-dialog</code></td></tr>
+    <tr><td>CookieYes</td><td><code>.cky-consent-bar</code>, <code>.cky-modal</code></td></tr>
+    <tr><td>Iubenda</td><td><code>#iubenda-cs-banner</code></td></tr>
+    <tr><td>Termly</td><td><code>.termly-banner</code></td></tr>
+    <tr><td>HubSpot</td><td><code>#hs-eu-cookie-confirmation</code></td></tr>
+    <tr><td>Klaro / Sourcepoint / Tealium</td><td>several class-prefix and ID signatures</td></tr>
+    <tr><td>CookieHub</td><td><code>.ch2</code>, <code>.ch2-dialog</code>, <code>.ch2-style-light</code>, <code>[id^=ch2-]</code></td></tr>
+    <tr><td>Cookie Information</td><td><code>.coi-banner__wrapper</code>, <code>#coiOverlay</code></td></tr>
+    <tr><td>Borlabs Cookie</td><td><code>#BorlabsCookieBox</code></td></tr>
+  </tbody>
+</table>
+
+<p>
+  To add a new vendor, edit <code>selector-match.config.selectors</code> in
+  <code>spec/rules.default.json</code>:
+</p>
+
+<pre><code>{ <span class="str">"vendor"</span>: <span class="str">"AcmeConsent"</span>,
+  <span class="str">"selector"</span>: <span class="str">"#acme-consent-bar, .acme-cmp-overlay"</span>,
+  <span class="str">"confidence"</span>: <span class="num">0.95</span> }</code></pre>
+
+<p>
+  Then add the relevant <code>[id*=acme i]</code> or <code>[class*=acme i]</code>
+  fragment to the top-level <code>candidateSelector</code> so the new vendor
+  signature is evaluated. (The <code>i</code> flag is case-insensitive matching
+  — important since some vendors mix case like <code>CybotCookiebotDialog</code>.)
+</p>
+
+<h2 id="auto-accept">Auto-accept cookies</h2>
+
+<p>
+  An alternative to <em>removing</em> the cookie modal: click the site's own
+  <strong>Accept</strong> button. The site's close handler then runs, which
+  releases scroll lock and persists the consent state — strictly cleaner than
+  hard-removing the modal markup ourselves. Useful when removal leaves the
+  page un-scrollable or breaks analytics-gated behavior.
+</p>
+
+<div class="callout">
+  <strong>Requires JS execution</strong>
+  Clicking a button is a JS operation, so auto-accept only works where JS runs:
+  the browser library (live DOM) or a server-side flow that uses Playwright /
+  Puppeteer to render the page. The HTTP API itself (<code>/v1/clean</code>) is
+  static HTML in → static HTML out — it can't click anything.
+</div>
+
+<h3>Browser library</h3>
+<pre><code><span class="kw">import</span> { removeModals } <span class="kw">from</span> <span class="str">'modalmodules/browser'</span>;
+<span class="kw">import</span> rules <span class="kw">from</span> <span class="str">'modalmodules/spec/rules.default.json'</span>;
+
+<span class="kw">const</span> { clicked, removed } = <span class="kw">await</span> <span class="fn">removeModals</span>(document, {
+  rules,
+  autoAccept: <span class="kw">true</span>,
+});
+<span class="com">// clicked = [{ vendor: 'OneTrust', selector: '#onetrust-accept-btn-handler' }, ...]</span>
+<span class="com">// removed = manual-removal fallback for anything not handled by accept-click</span></code></pre>
+
+<p>Combine with watch mode for SPA/late-injected banners:</p>
+
+<pre><code><span class="kw">const</span> handle = <span class="kw">await</span> <span class="fn">removeModals</span>(document, {
+  rules,
+  watch: <span class="kw">true</span>,
+  autoAccept: <span class="kw">true</span>,
+  <span class="fn">onAccept</span>: (entry) =&gt; console.<span class="fn">log</span>(<span class="str">'clicked'</span>, entry.vendor),
+  <span class="fn">onRemove</span>: (entry) =&gt; console.<span class="fn">log</span>(<span class="str">'removed'</span>, entry.selector),
+});</code></pre>
+
+<h3>Does removal of the modal undo the acceptance?</h3>
+<div class="callout">
+  <strong>No.</strong>
+  When the Accept button is clicked, the site stores consent state
+  <em>synchronously</em> (to localStorage, cookies, or a server POST) the
+  moment the click handler fires. Our subsequent DOM-removal pass only touches
+  the DOM, never storage, so the consent record survives intact.
+  <br><br>
+  But the inverse <em>is</em> true and worth knowing:
+  <strong>plain removal (without <code>autoAccept</code>) leaves the user
+  un-consented.</strong> The modal disappears, but the site never registers
+  any choice — so analytics that gates on consent won't fire, personalization
+  stays off, and the banner reappears on the next visit. For cookie modals
+  specifically, prefer <code>autoAccept: true</code>; reserve plain removal
+  for newsletter/popup nags with no consent semantics.
+</div>
+
+<h3>Text-based button matching (fallback)</h3>
+<p>
+  When no vendor selector matches, a fallback pass scans button text inside
+  cookie/consent containers and clicks any whose visible text matches a known
+  pattern. Covers custom-built banners on smaller sites where the classes/IDs
+  are bespoke but the button label is standard.
+</p>
+<p>What gets checked:</p>
+<ul>
+  <li><code>textContent</code> — including text inside nested spans/icons</li>
+  <li><code>value</code> attribute — for <code>&lt;input type="button"&gt;</code></li>
+  <li><code>aria-label</code> — for icon-only buttons with no visible text</li>
+</ul>
+<p>Safety guards (none of these get clicked):</p>
+<table>
+  <thead><tr><th>Constraint</th><th>Why</th></tr></thead>
+  <tbody>
+    <tr><td>Scoped to cookie/consent/GDPR/dialog containers</td><td>Prevents clicking "Accept" on a checkout terms form or an unrelated dialog</td></tr>
+    <tr><td>Deny-word filter</td><td>Excludes "Reject all", "Decline", "Manage preferences", "Customize", "Necessary only", "Settings"</td></tr>
+    <tr><td>Exact match preferred over contains-match</td><td>"Accept all" matches; "By accepting our terms…" doesn't</td></tr>
+    <tr><td>Contains-match length-capped</td><td>Won't match a paragraph of text that happens to include "accept"</td></tr>
+    <tr><td><code>maxClicks: 1</code> per pass (default)</td><td>One Accept click per banner — no runaway clicking</td></tr>
+  </tbody>
+</table>
+
+<p>Multi-language patterns shipped by default:</p>
+<table>
+  <thead><tr><th>Language</th><th>Sample patterns</th></tr></thead>
+  <tbody>
+    <tr><td>English</td><td><code>accept all</code>, <code>accept all cookies</code>, <code>accept</code>, <code>allow all</code>, <code>i agree</code>, <code>got it</code>, <code>ok</code></td></tr>
+    <tr><td>Spanish</td><td><code>aceptar todo</code>, <code>aceptar todas</code>, <code>aceptar</code></td></tr>
+    <tr><td>French</td><td><code>tout accepter</code>, <code>accepter tout</code>, <code>accepter</code></td></tr>
+    <tr><td>German</td><td><code>alle akzeptieren</code>, <code>akzeptieren</code>, <code>einverstanden</code>, <code>zustimmen</code></td></tr>
+    <tr><td>Italian</td><td><code>accetta tutto</code>, <code>accetta</code>, <code>accetto</code></td></tr>
+    <tr><td>Portuguese</td><td><code>aceitar tudo</code>, <code>aceitar todos</code>, <code>aceitar</code></td></tr>
+    <tr><td>Dutch</td><td><code>alle accepteren</code>, <code>accepteren</code></td></tr>
+    <tr><td>Polish</td><td><code>zaakceptuj wszystko</code>, <code>akceptuję</code></td></tr>
+    <tr><td>Russian</td><td><code>принять</code>, <code>принять все</code>, <code>соглашаюсь</code></td></tr>
+  </tbody>
+</table>
+
+<p>
+  Extend by appending to <code>autoAccept.textFallback.patterns</code> in
+  <code>spec/rules.default.json</code>. Same for <code>denyWords</code> if you
+  need to exclude additional phrases.
+</p>
+
+<h3>Server-side: Playwright recipe (client-side rendering, then call our API)</h3>
+<p>
+  For HTTP API users (Python, Node, anything), do the JS work on your end —
+  render the page in a headless browser, click consent buttons, snapshot the
+  HTML, then send the snapshot to <code>/v1/clean</code> for any cleanup of
+  non-cookie modals.
+</p>
+
+<pre><code><span class="com"># Python</span>
+<span class="kw">import</span> json, requests
+<span class="kw">from</span> playwright.sync_api <span class="kw">import</span> sync_playwright
+
+<span class="com"># Same list our browser API uses — keep both runtimes in sync</span>
+RULES = json.<span class="fn">load</span>(<span class="fn">open</span>(<span class="str">'modalmodules/spec/rules.default.json'</span>))
+ACCEPT_SELECTORS = [b[<span class="str">'selector'</span>] <span class="kw">for</span> b <span class="kw">in</span> RULES[<span class="str">'autoAccept'</span>][<span class="str">'buttonSelectors'</span>]]
+
+<span class="kw">with</span> sync_playwright() <span class="kw">as</span> p:
+    page = p.chromium.<span class="fn">launch</span>().<span class="fn">new_page</span>()
+    page.<span class="fn">goto</span>(<span class="str">'https://example.com'</span>)
+    page.<span class="fn">wait_for_load_state</span>(<span class="str">'networkidle'</span>)
+
+    <span class="com"># Click the first accept button we recognize</span>
+    <span class="kw">for</span> selector <span class="kw">in</span> ACCEPT_SELECTORS:
+        <span class="kw">try</span>:
+            page.<span class="fn">click</span>(selector, timeout=<span class="num">1000</span>)
+            <span class="kw">break</span>
+        <span class="kw">except</span>:
+            <span class="kw">continue</span>
+
+    page.<span class="fn">wait_for_timeout</span>(<span class="num">500</span>)   <span class="com"># let site's close handler finish</span>
+    rendered = page.<span class="fn">content</span>()
+
+<span class="com"># Final pass: clean any remaining non-cookie popups</span>
+clean = requests.<span class="fn">post</span>(<span class="str">'http://localhost:8787/v1/clean'</span>, data=rendered).<span class="fn">json</span>()</code></pre>
+
+<pre><code><span class="com">// Node + Playwright equivalent</span>
+<span class="kw">import</span> { chromium } <span class="kw">from</span> <span class="str">'playwright'</span>;
+<span class="kw">import</span> rules <span class="kw">from</span> <span class="str">'modalmodules/spec/rules.default.json'</span> <span class="kw">with</span> { type: <span class="str">'json'</span> };
+
+<span class="kw">const</span> page = <span class="kw">await</span> (<span class="kw">await</span> chromium.<span class="fn">launch</span>()).<span class="fn">newPage</span>();
+<span class="kw">await</span> page.<span class="fn">goto</span>(<span class="str">'https://example.com'</span>);
+<span class="kw">await</span> page.<span class="fn">waitForLoadState</span>(<span class="str">'networkidle'</span>);
+
+<span class="kw">for</span> (<span class="kw">const</span> { selector } <span class="kw">of</span> rules.autoAccept.buttonSelectors) {
+  <span class="kw">try</span> { <span class="kw">await</span> page.<span class="fn">click</span>(selector, { timeout: <span class="num">1000</span> }); <span class="kw">break</span>; } <span class="kw">catch</span> {}
+}
+<span class="kw">await</span> page.<span class="fn">waitForTimeout</span>(<span class="num">500</span>);
+
+<span class="kw">const</span> rendered = <span class="kw">await</span> page.<span class="fn">content</span>();
+<span class="kw">const</span> { html } = <span class="kw">await</span> (<span class="kw">await</span> <span class="fn">fetch</span>(<span class="str">'http://localhost:8787/v1/clean'</span>, {
+  method: <span class="str">'POST'</span>, body: rendered,
+})).<span class="fn">json</span>();</code></pre>
+
+<h3>Supported vendors</h3>
+<p>Auto-accept knows the following vendor-specific Accept buttons:</p>
+<ul style="columns: 2; column-gap: 32px;">
+  <li>OneTrust</li>
+  <li>Cookiebot</li>
+  <li>Didomi</li>
+  <li>Usercentrics</li>
+  <li>Quantcast Choice</li>
+  <li>TrustArc</li>
+  <li>Osano</li>
+  <li>CookieYes</li>
+  <li>Iubenda</li>
+  <li>HubSpot</li>
+  <li>CookieHub</li>
+  <li>Cookie Information</li>
+  <li>Tealium</li>
+  <li>Borlabs</li>
+  <li>Klaro</li>
+  <li>Sourcepoint</li>
+  <li>Termly</li>
+</ul>
+
+<p>
+  Add a new vendor by appending to <code>autoAccept.buttonSelectors</code> in
+  <code>spec/rules.default.json</code>:
+</p>
+
+<pre><code>{ <span class="str">"vendor"</span>: <span class="str">"Acme"</span>, <span class="str">"selector"</span>: <span class="str">"#acme-accept-all, .acme-consent .primary-btn"</span> }</code></pre>
+
+<h2 id="auto-accept-url">Server-side render + accept (<code>/v1/auto-accept-url</code>)</h2>
+
+<p>
+  Single-call answer for sites that need a real browser: JS-rendered popups
+  (BBC, NYT, Medium…) and anti-bot-blocked sites (Reuters, Tripadvisor…).
+  The server launches headless Chromium via Playwright, navigates, clicks the
+  Accept (or Decline) button using the same vendor selectors as the browser
+  library, snapshots the resulting HTML, and runs it through the normal cleaner.
+</p>
+
+<div class="callout warn">
+  <strong>Optional peer dependency — install on demand</strong>
+  Playwright + Chromium adds ~300 MB. We don't ship it by default. When you
+  call <code>/v1/auto-accept-url</code> without it installed, you get a
+  helpful 501 with the exact install command.
+  <pre style="margin:8px 0 0;"><code>npm install playwright
+npx playwright install chromium</code></pre>
+</div>
+
+<h3>Request</h3>
+<pre><code><span class="kw">curl</span> -X POST http://127.0.0.1:8787/v1/auto-accept-url \
+  -H <span class="str">'content-type: application/json'</span> \
+  -d <span class="str">'{"url": "https://www.bbc.com", "cookies": "accept", "waitMs": 2000}'</span></code></pre>
+
+<table>
+  <thead><tr><th>Field</th><th>Type</th><th>Default</th><th>Notes</th></tr></thead>
+  <tbody>
+    <tr><td><code>url</code></td><td>string</td><td>—</td><td>Required. http(s) only.</td></tr>
+    <tr><td><code>cookies</code></td><td><code>"accept"</code> | <code>"decline"</code></td><td><code>"accept"</code></td><td>Which button list to try.</td></tr>
+    <tr><td><code>waitMs</code></td><td>number</td><td><code>1500</code></td><td>Extra wait after <code>networkidle</code> for delayed popups to inject.</td></tr>
+    <tr><td><code>navTimeoutMs</code></td><td>number</td><td><code>30000</code></td><td>Page-load timeout.</td></tr>
+  </tbody>
+</table>
+
+<h3>Response</h3>
+<pre><code>{
+  <span class="str">"html"</span>:       <span class="str">"&lt;html&gt;...&lt;/html&gt;"</span>,
+  <span class="str">"sourceUrl"</span>:  <span class="str">"https://www.bbc.com"</span>,
+  <span class="str">"clicked"</span>: [
+    { <span class="str">"vendor"</span>: <span class="str">"OneTrust"</span>,
+      <span class="str">"selector"</span>: <span class="str">"#onetrust-accept-btn-handler"</span>,
+      <span class="str">"label"</span>: <span class="str">"Accept all"</span>,
+      <span class="str">"mode"</span>: <span class="str">"accept"</span> }
+  ],
+  <span class="str">"removed"</span>:    [...],                  <span class="com">// any non-cookie modals the click didn't close</span>
+  <span class="str">"cleanup"</span>:    [...],                  <span class="com">// scroll-unlock + orphan sweep</span>
+  <span class="str">"renderMs"</span>:   <span class="num">3247</span>,                  <span class="com">// time spent in headless browser</span>
+  <span class="str">"ms"</span>:         <span class="num">3318</span>                   <span class="com">// total request time</span>
+}</code></pre>
+
+<h3>When to use which endpoint</h3>
+<table>
+  <thead><tr><th>Situation</th><th>Use</th></tr></thead>
+  <tbody>
+    <tr><td>You already have the HTML (scraped, archived, generated)</td><td><code>/v1/clean</code></td></tr>
+    <tr><td>You have a URL, page is mostly server-rendered, popups are in initial HTML</td><td><code>/v1/clean-url</code> (faster, no browser)</td></tr>
+    <tr><td>You have a URL, popups are JS-injected (BBC, NYT, Medium, …) OR site blocks bot fetches (Reuters, Tripadvisor, …)</td><td><code>/v1/auto-accept-url</code> (slower, needs Playwright, but actually works)</td></tr>
+  </tbody>
+</table>
+
+<h3>Per-request preference overrides still apply</h3>
+<pre><code><span class="kw">curl</span> -X POST <span class="str">'http://localhost:8787/v1/auto-accept-url?popups=ignore&amp;authModals=ignore'</span> \
+  -H <span class="str">'content-type: application/json'</span> \
+  -d <span class="str">'{"url": "https://example.com", "cookies": "decline"}'</span></code></pre>
+
+<h2 id="scroll-cleanup">Scroll lock + orphan cleanup</h2>
+
+<p>
+  Removing a modal node isn't always enough. Sites typically lock body scroll
+  when they open a modal (<code>body.classList.add('modal-open')</code> or
+  <code>body.style.overflow = 'hidden'</code>) and ship a separate
+  <code>.modal-backdrop</code> sibling that dims the page. After we remove the
+  modal node, those locks and backdrops persist — and the page stays
+  un-scrollable or stuck behind a dark overlay.
+</p>
+
+<p>
+  A <strong>cleanup phase</strong> runs automatically after main removal (only
+  when at least one modal was actually removed — pages that legitimately use
+  these classes aren't touched). It does two things:
+</p>
+
+<ul>
+  <li><strong>Unlocks scroll</strong> — strips a configurable list of known
+    lock classes (<code>modal-open</code>, <code>no-scroll</code>,
+    <code>ReactModal__Body--open</code>, …) from <code>html</code>/<code>body</code>
+    and removes inline style properties (<code>overflow</code>, <code>position</code>,
+    <code>top</code>, <code>padding-right</code>, <code>touch-action</code>).</li>
+  <li><strong>Sweeps orphan wrappers</strong> — removes leftover backdrop /
+    overlay nodes like <code>.modal-backdrop</code>, <code>.ReactModal__Overlay</code>,
+    <code>.fancybox-overlay</code>, <code>.mfp-bg</code>,
+    <code>#CybotCookiebotDialogBodyUnderlay</code>, etc.</li>
+</ul>
+
+<h3>Response now includes a cleanup log</h3>
+<pre><code>{
+  <span class="str">"html"</span>: <span class="str">"..."</span>,
+  <span class="str">"removed"</span>: [ ... ],
+  <span class="str">"cleanup"</span>: [
+    { <span class="str">"action"</span>: <span class="str">"unlock-class"</span>,  <span class="str">"node"</span>: <span class="str">"body"</span>, <span class="str">"value"</span>: <span class="str">"modal-open"</span> },
+    { <span class="str">"action"</span>: <span class="str">"unlock-style"</span>,  <span class="str">"node"</span>: <span class="str">"body"</span>, <span class="str">"value"</span>: <span class="str">"overflow"</span> },
+    { <span class="str">"action"</span>: <span class="str">"remove-orphan"</span>, <span class="str">"node"</span>: <span class="str">"div.modal-backdrop"</span>, <span class="str">"value"</span>: <span class="str">".modal-backdrop"</span> }
+  ],
+  <span class="str">"ms"</span>: <span class="num">17</span>
+}</code></pre>
+
+<p>
+  The <code>?format=html</code> mode now also sets an
+  <code>x-cleanup-actions</code> response header with the count.
+</p>
+
+<h3>Watch mode</h3>
+<p>
+  When a JS-injected popup is removed in watch mode, cleanup also runs on the
+  full document — so scroll lock added by the same script that injected the
+  popup is restored just as well as for the initial pass.
+</p>
+
+<h3>Adding a new lock class or backdrop signature</h3>
+<p>
+  Edit <code>cleanup</code> in <code>spec/rules.default.json</code>. Both
+  lists are open-ended — append your site-specific entries:
+</p>
+
+<pre><code>{
+  <span class="str">"cleanup"</span>: {
+    <span class="str">"unlockScroll"</span>: {
+      <span class="str">"targets"</span>: <span class="str">"html, body"</span>,
+      <span class="str">"removeClasses"</span>: [<span class="str">"modal-open"</span>, <span class="str">"acme-popup-active"</span>],
+      <span class="str">"removeStyleProperties"</span>: [
+        <span class="str">"overflow"</span>,                                       <span class="com">// always strip</span>
+        { <span class="str">"prop"</span>: <span class="str">"position"</span>, <span class="str">"ifValue"</span>: <span class="str">"fixed"</span> },     <span class="com">// only if value matches</span>
+        { <span class="str">"prop"</span>: <span class="str">"top"</span>, <span class="str">"ifSiblingProp"</span>: { <span class="str">"position"</span>: <span class="str">"fixed"</span> } }  <span class="com">// iOS lock pattern</span>
+      ]
+    },
+    <span class="str">"removeOrphans"</span>: {
+      <span class="str">"selectors"</span>: [<span class="str">".modal-backdrop"</span>, <span class="str">".acme-dim-overlay"</span>]
+    }
+  }
+}</code></pre>
+
+<h3>Injected scroll-unlock backup</h3>
+<p>
+  Class-stripping and inline-style-stripping only solve scroll lock when the
+  rule lives in a class or <code>style=</code> attribute. Sites that put the
+  lock in a <code>&lt;style&gt;</code> block (<code>body { overflow: hidden }</code>
+  with no class hook) or use modern selectors like
+  <code>html:has(.modal-active) { overflow: hidden }</code> aren't fixed by
+  stripping alone.
+</p>
+<p>
+  As a last-resort backup, a <code>&lt;style data-modalmodules-unlock&gt;</code>
+  tag is injected into <code>&lt;head&gt;</code> with an
+  <code>!important</code> override:
+</p>
+<pre><code>html, body { overflow-y: <span class="kw">auto</span> !important; }</code></pre>
+<p>
+  This wins over any stylesheet rule. Default ON; set
+  <code>cleanup.injectScrollUnlock: false</code> to disable, or pass
+  <code>{ "css": "..." }</code> to use custom override CSS:
+</p>
+<pre><code>{
+  <span class="str">"injectScrollUnlock"</span>: { <span class="str">"css"</span>: <span class="str">"html,body{overflow:auto!important;height:auto!important;}"</span> }
+}</code></pre>
+<p>
+  The injection is idempotent — repeated cleaning passes don't accumulate
+  duplicate <code>&lt;style&gt;</code> tags.
+</p>
+
+<h3>Conditional style stripping</h3>
+<p>
+  Entries in <code>removeStyleProperties</code> are either plain strings
+  (always strip if present) OR objects with conditions:
+</p>
+<ul>
+  <li><code>{ "prop": "position", "ifValue": "fixed" }</code> — only strip
+    <code>position</code> if its current value is exactly <code>fixed</code>.
+    This protects sites that legitimately set <code>body { position: relative }</code>
+    for absolute-positioned children. Stripping that unconditionally was breaking
+    real layouts.</li>
+  <li><code>{ "prop": "top", "ifSiblingProp": { "position": "fixed" } }</code>
+    — strip <code>top</code> only when <code>position: fixed</code> is also
+    set on the same node. That combination is the iOS scroll-lock signature
+    (<code>body { position: fixed; top: -300px }</code>); a stray <code>top: 0</code>
+    on a <code>position: static</code> body is left alone.</li>
+</ul>
+
+<p>
+  Values are snapshotted before stripping starts, so multiple conditional
+  rules see the same pre-strip state — the order of entries doesn't matter.
+</p>
+
+<div class="callout warn">
+  <strong>Safety note</strong>
+  Cleanup only fires when at least one modal was removed. If you call
+  <code>/v1/clean</code> with a page that legitimately uses <code>modal-open</code>
+  as a class name for unrelated reasons (e.g. a calendar app's "modal" view),
+  nothing is stripped because the detection step found no modals.
+</div>
+
+<h2 id="logging">Logging</h2>
+
+<p>
+  Two independent log surfaces: the HTTP server prints one line per request to
+  stdout (on by default); the library API (Node + browser) emits structured
+  events when you opt in with the <code>log</code> option.
+</p>
+
+<h3>HTTP server — three log modes</h3>
+
+<table>
+  <thead><tr><th>Mode</th><th>Flag</th><th>What you see</th></tr></thead>
+  <tbody>
+    <tr><td>summary <em>(default)</em></td><td>—</td><td>One line per request with method, path, status, removed/cleanup counts, timing</td></tr>
+    <tr><td>verbose</td><td><code>--verbose</code> / <code>MODALMODULES_VERBOSE=1</code></td><td>All per-action library logs (each removal with vendor/preview, each cleanup action, each cookie accept) PLUS the request summary</td></tr>
+    <tr><td>quiet</td><td><code>--quiet</code> / <code>MODALMODULES_QUIET=1</code></td><td>Nothing per-request (still prints startup banner)</td></tr>
+  </tbody>
+</table>
+
+<p><strong>Summary mode (default):</strong></p>
+<pre><code>[modalmodules] POST /v1/clean → 200 removed=1 cleanup=4 (45ms)
+[modalmodules] POST /v1/clean-url → 400 error="only http/https URLs allowed" (2ms)</code></pre>
+
+<p><strong>Verbose mode:</strong></p>
+<pre><code><span class="kw">npm</span> start -- --verbose
+<span class="com"># or: MODALMODULES_VERBOSE=1 npm start</span></code></pre>
+<pre><code>[modalmodules] → POST /v1/clean
+[modalmodules] scanning 5 candidate elements against 4 detectors
+[modalmodules] removed cookie banner (OneTrust): &lt;div#onetrust-banner-sdk&gt; — "We use cookies to improve…"
+[modalmodules] removed newsletter popup (class-name-pattern, score 1.08): &lt;div.newsletter-popup&gt; — "Subscribe for 10% off"
+[modalmodules] running post-removal cleanup (scroll unlock + orphan sweep + style inject)
+[modalmodules] unlocked body: removed class "modal-open"
+[modalmodules] swept orphan element: &lt;div.fancybox-overlay&gt;
+[modalmodules] injected backup &lt;style&gt; into &lt;head&gt; (scroll-unlock)
+[modalmodules] done in 38ms — removed 2, cleanup 3
+[modalmodules] POST /v1/clean → 200 removed=2 cleanup=3 (45ms)</code></pre>
+
+<p>Health checks and CORS preflights stay suppressed in all modes to keep the log focused on real work.</p>
+
+<h3>Library API (opt-in)</h3>
+<p>Pass <code>log: true</code> to get sensible console output:</p>
+<pre><code><span class="kw">await</span> <span class="fn">removeModalsFromHTML</span>(html, { log: <span class="kw">true</span> });
+
+<span class="com">// [modalmodules] scanning 5 candidate elements against 4 detectors</span>
+<span class="com">// [modalmodules] removed dialog (ARIA) (aria-dialog, definitive): &lt;div&gt; — "Subscribe! Sign up for a 10% discount"</span>
+<span class="com">// [modalmodules] removed cookie banner (OneTrust): &lt;div#onetrust-banner-sdk&gt; — "We use cookies to improve…"</span>
+<span class="com">// [modalmodules] removed newsletter popup (class-name-pattern, score 1.08): &lt;div.newsletter-popup-overlay&gt; — "Get our weekly digest"</span>
+<span class="com">// [modalmodules] skipped 1 preserve-listed and 0 descendant-of-removed candidate</span>
+<span class="com">// [modalmodules] running post-removal cleanup (scroll unlock + orphan sweep + style inject)</span>
+<span class="com">// [modalmodules] unlocked body: removed class "modal-open"</span>
+<span class="com">// [modalmodules] unlocked body: removed inline style "overflow"</span>
+<span class="com">// [modalmodules] swept orphan element: &lt;div.fancybox-overlay&gt;</span>
+<span class="com">// [modalmodules] injected backup &lt;style&gt; into &lt;head&gt; (scroll-unlock)</span>
+<span class="com">// [modalmodules] done in 45ms — removed 3, cleanup 4</span></code></pre>
+
+<p>Each line tells you <strong>what kind</strong> of element, <strong>which detector</strong> matched, <strong>why</strong> it matched (score / vendor / pattern), and the first ~60 chars of the element's text so you can recognize it when something looks wrong.</p>
+
+<p>For structured logging (Datadog, Sentry, Pino, whatever), pass a function:</p>
+<pre><code><span class="kw">await</span> <span class="fn">removeModalsFromHTML</span>(html, {
+  log: (event) =&gt; {
+    <span class="com">// event = { level, message, details, ts }</span>
+    logger.<span class="fn">info</span>({ source: <span class="str">'modalmodules'</span>, ...event });
+  },
+});</code></pre>
+
+<p>Or pass an options object to customize the formatter while keeping the default:</p>
+<pre><code><span class="kw">await</span> <span class="fn">removeModalsFromHTML</span>(html, {
+  log: {
+    prefix: <span class="str">'[scraper-job-42]'</span>,
+    output: (e) =&gt; process.stderr.<span class="fn">write</span>(<span class="str">`</span>${e.ts}<span class="str"> </span>${e.message}<span class="str">\n`</span>),
+  },
+});</code></pre>
+
+<h3>Browser API</h3>
+<p>Same <code>log</code> option works in the browser. autoAccept clicks are logged distinctly:</p>
+<pre><code><span class="kw">await</span> <span class="fn">removeModals</span>(document, {
+  rules,
+  autoAccept: <span class="kw">true</span>,
+  log: <span class="kw">true</span>,
+});
+
+<span class="com">// [modalmodules] auto-accepted OneTrust cookies: clicked &lt;button#onetrust-accept-btn-handler&gt; labeled "Accept All Cookies"</span>
+<span class="com">// [modalmodules] auto-accepted cookies (text match "accept all"): clicked &lt;button#accept-btn&gt; labeled "Accept all"</span>
+<span class="com">// [modalmodules] scanning 0 candidate elements against 4 detectors      // (site already closed itself)</span>
+<span class="com">// [modalmodules] nothing removed — cleanup skipped to avoid touching unrelated pages</span>
+<span class="com">// [modalmodules] done in 7ms — removed 0, cleanup 0</span>
+<span class="com">// [modalmodules] watch mode: observer started</span>
+<span class="com">// [modalmodules] watch → auto-accepted Cookiebot cookies: clicked &lt;button#CybotCookiebotDialogBodyLevelButtonAccept&gt; labeled "Allow"</span>
+<span class="com">// [modalmodules] watch mode: observer stopped</span></code></pre>
+
+<h3>Event shape</h3>
+<table>
+  <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+  <tbody>
+    <tr><td><code>level</code></td><td><code>'info' | 'debug' | 'error'</code></td><td>Severity</td></tr>
+    <tr><td><code>message</code></td><td><code>string</code></td><td>Human-readable summary</td></tr>
+    <tr><td><code>details</code></td><td><code>object</code></td><td>Structured payload — full removal entry, cleanup action, or click record</td></tr>
+    <tr><td><code>ts</code></td><td><code>number</code></td><td>Epoch ms</td></tr>
+  </tbody>
+</table>
+
+<h2 id="deployment">Deployment notes</h2>
+
+<div class="callout warn">
+  <strong>Before public deployment, lock these down</strong>
+  Two security items are intentionally permissive for local/internal use.
+</div>
+
+<h3>1. SSRF protection on <code>/v1/clean-url</code></h3>
+<p>
+  The fetch endpoint currently allows any <code>http</code>/<code>https</code>
+  URL. In production you should also reject loopback (<code>127.0.0.0/8</code>),
+  link-local (<code>169.254.0.0/16</code>), and RFC1918 ranges
+  (<code>10.0.0.0/8</code>, <code>172.16.0.0/12</code>, <code>192.168.0.0/16</code>).
+  Add a DNS lookup before the fetch and bail if the resolved IP is private.
+  See the marker comment in <code>src/server/HttpServer.js</code>.
+</p>
+
+<h3>2. CORS origin allowlist</h3>
+<p>
+  Default is <code>Access-Control-Allow-Origin: *</code>. Replace with your
+  customer origins in <code>applyCors()</code> before exposing publicly.
+</p>
+
+<h3>Operational guardrails already in place</h3>
+<ul>
+  <li><strong>10 MB body cap</strong> — oversize requests get 413.</li>
+  <li><strong>15s fetch timeout</strong> on <code>/v1/clean-url</code> via <code>AbortController</code>.</li>
+  <li><strong>Protocol allowlist</strong> — only <code>http</code>/<code>https</code> URLs.</li>
+  <li><strong>Bearer token auth</strong> activates when <code>MODALMODULES_API_KEY</code> is set.</li>
+</ul>
+
+<h3>Process management</h3>
+<p>
+  The server is a single Node process. In production use a process manager
+  (systemd, pm2, Docker with a restart policy) and put it behind a reverse
+  proxy (nginx, Caddy) for TLS termination and rate limiting.
+</p>
+
+<h2 id="project-layout">Project layout</h2>
+<pre><code>ModalModules/
+├── spec/
+│   ├── rules.schema.json          <span class="com"># JSON Schema for detection rules</span>
+│   ├── rules.default.json         <span class="com"># bundled detection rules</span>
+│   ├── user-preferences.schema.json
+│   ├── user-preferences.json      <span class="com"># end-user "what to do" prefs (popups/cookies/authModals)</span>
+│   └── fixtures/*.html            <span class="com"># shared test cases (Python will reuse)</span>
+├── src/
+│   ├── core/
+│   │   ├── NodeAdapter.js         <span class="com"># adapter contract (JSDoc)</span>
+│   │   ├── DetectionEngine.js     <span class="com"># runs detectors, scores, decides</span>
+│   │   └── detectors/
+│   │       ├── index.js           <span class="com"># registry + "how to add one"</span>
+│   │       ├── ariaDialog.js
+│   │       ├── classNamePattern.js
+│   │       ├── fullViewportOverlay.js
+│   │       └── selectorMatch.js   <span class="com"># vendor signatures (OneTrust, Cookiebot, …)</span>
+│   ├── adapters/
+│   │   ├── CheerioAdapter.js      <span class="com"># server (HTML strings)</span>
+│   │   └── DOMAdapter.js          <span class="com"># browser (live document)</span>
+│   ├── repositories/
+│   │   ├── RuleRepository.js      <span class="com"># interface</span>
+│   │   ├── DefaultRuleRepository.js
+│   │   └── JsonFileRuleRepository.js
+│   ├── services/
+│   │   └── ModalRemovalService.js <span class="com"># orchestrates repo + engine + adapter + cleanup</span>
+│   ├── server/
+│   │   ├── HttpServer.js          <span class="com"># HTTP API (CORS, auth, body limits, request log)</span>
+│   │   └── autoAcceptUrl.js       <span class="com"># Playwright orchestrator (optional peer dep)</span>
+│   ├── api/
+│   │   ├── server.js              <span class="com"># removeModalsFromHTML(html, opts)</span>
+│   │   └── browser.js             <span class="com"># removeModals(doc, { rules, autoAccept?, watch?, log? })</span>
+│   ├── util/
+│   │   └── logger.js              <span class="com"># logger factory (bool / function / {output})</span>
+│   └── index.js
+├── bin/
+│   └── modalmodules.js            <span class="com"># `serve` CLI (--quiet / --verbose)</span>
+├── test/
+│   ├── smoke.test.js              <span class="com"># server-side library tests</span>
+│   ├── http.test.js               <span class="com"># HTTP-layer tests</span>
+│   ├── watch.test.js              <span class="com"># browser API + watch + autoAccept (jsdom)</span>
+│   ├── log.test.js                <span class="com"># logger output assertions</span>
+│   ├── preferences.test.js        <span class="com"># preferences filter + decline + auth</span>
+│   └── auto-accept-url.test.js    <span class="com"># /v1/auto-accept-url validation</span>
+├── README.md                      <span class="com"># developer entry point</span>
+├── docs.html                      <span class="com"># this file</span>
+└── package.json</code></pre>
+
+<footer>
+  <p>modalmodules v0.1.0 · MIT-style</p>
+</footer>
+
+</main>
+</div>
+
+<script>
+  // Highlight the TOC item for the section currently in view.
+  const links = Array.from(document.querySelectorAll('aside nav a'));
+  const sections = links
+    .map(a => document.getElementById(a.getAttribute('href').slice(1)))
+    .filter(Boolean);
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const id = entry.target.id;
+        links.forEach(a => {
+          a.classList.toggle('active', a.getAttribute('href') === '#' + id);
+        });
+      }
+    });
+  }, { rootMargin: '-40% 0px -55% 0px', threshold: 0 });
+
+  sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>

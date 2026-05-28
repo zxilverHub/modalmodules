@@ -1,0 +1,248 @@
+{
+  "$schema": "./rules.schema.json",
+  "version": 1,
+  "candidateSelector": "[role=dialog], [role=alertdialog], [aria-modal=true], [class*=modal i], [class*=popup i], [class*=overlay i], [class*=lightbox i], [class*=backdrop i], [class*=cookie i], [class*=consent i], [class*=newsletter i], [class*=paywall i], [class*=drawer i], [class*=signup i], [class*=sign-up i], [class*=signin i], [class*=sign-in i], [class*=login i], [class*=register i], [class*=registration i], [class*=auth- i], [class*=account i], [class*=optanon i], [class*=cybot i], [class*=didomi i], [class*=usercentrics i], [class*=truste i], [class*=osano i], [class*=cky- i], [class*=iubenda i], [class*=termly i], [class*=qc-cmp i], [class*=ch2 i], [class*=coi-banner i], [class*=klaro i], [class*=borlabs i], [class*=privy- i], [class*=klaviyo i], [class*=juno- i], [class*=om- i], [class*=wisepops i], [class*=poptin- i], [class*=hellobar i], [class*=optinmonster i], [class*=sumo i], [id*=onetrust i], [id*=cybot i], [id*=didomi i], [id*=usercentrics i], [id*=qc-cmp i], [id*=truste-consent i], [id*=iubenda-cs i], [id*=hs-eu-cookie i], [id*=tealium i], [id*=ch2 i], [id*=coiOverlay i], [id*=BorlabsCookie i], [id*=privy- i], [id*=juno i], [id*=om- i], [id*=wisepops i], [id*=poptin i], [id*=mc_embed_signup i], [id*=cart-drawer i], [id*=search-modal i], [id*=login i], [id*=signup i], [id*=register i], [id*=auth i], [data-cart-drawer], [data-klaviyo-form], [style*=position]",
+  "detectors": [
+    {
+      "id": "aria-dialog",
+      "enabled": true,
+      "weight": 1.5,
+      "config": {}
+    },
+    {
+      "id": "selector-match",
+      "enabled": true,
+      "weight": 1.5,
+      "config": {
+        "selectors": [
+          { "vendor": "OneTrust",      "selector": "#onetrust-consent-sdk, #onetrust-banner-sdk, #onetrust-pc-sdk, .onetrust-pc-dark-filter, .optanon-alert-box-wrapper", "confidence": 0.95 },
+          { "vendor": "Cookiebot",     "selector": "#CybotCookiebotDialog, #CybotCookiebotDialogBodyUnderlay", "confidence": 0.95 },
+          { "vendor": "Didomi",        "selector": "#didomi-host, #didomi-notice, #didomi-popup, .didomi-popup-container", "confidence": 0.95 },
+          { "vendor": "Usercentrics",  "selector": "#usercentrics-root, #usercentrics-cmp-ui, .uc-banner, .uc-overlay", "confidence": 0.95 },
+          { "vendor": "Quantcast",     "selector": "#qc-cmp2-container, #qc-cmp2-ui, .qc-cmp2-summary-info", "confidence": 0.95 },
+          { "vendor": "TrustArc",      "selector": "#truste-consent-track, .truste_box_overlay, .truste_overlay, #consent_blackbar", "confidence": 0.95 },
+          { "vendor": "Osano",         "selector": ".osano-cm-window, .osano-cm-dialog, .osano-cm-drawer-overlay", "confidence": 0.95 },
+          { "vendor": "CookieYes",     "selector": ".cky-consent-bar, .cky-modal, .cky-overlay, .cky-consent-container", "confidence": 0.95 },
+          { "vendor": "Iubenda",       "selector": "#iubenda-cs-banner, .iubenda-cs-container, .iubenda-tp-btn", "confidence": 0.95 },
+          { "vendor": "Termly",        "selector": ".termly-banner, .termly-styled-banner, [data-tid='banner']", "confidence": 0.9 },
+          { "vendor": "HubSpot",       "selector": "#hs-eu-cookie-confirmation, #hs-banner-parent", "confidence": 0.95 },
+          { "vendor": "Klaro",         "selector": ".klaro .cookie-notice, .klaro .cookie-modal", "confidence": 0.9 },
+          { "vendor": "Sourcepoint",   "selector": ".sp_message_container, .sp_veil, [class^=sp_message]", "confidence": 0.9 },
+          { "vendor": "Tealium",       "selector": "#__tealiumGDPRecModal, #__tealiumGDPRcpPrefs", "confidence": 0.9 },
+          { "vendor": "CookieHub",     "selector": ".ch2, .ch2-dialog, .ch2-style-light, .ch2-style-dark, .ch2-container, #ch2-overlay, [id^=ch2-]", "confidence": 0.95 },
+          { "vendor": "Cookie Information", "selector": ".coi-banner__wrapper, #coiOverlay", "confidence": 0.95 },
+          { "vendor": "Klaro",         "selector": ".klaro, .klaro .notice, .klaro .modal", "confidence": 0.9 },
+          { "vendor": "Borlabs Cookie","selector": "#BorlabsCookieBox, .BorlabsCookie", "confidence": 0.9 },
+          { "vendor": "GDPR (generic)","selector": "[class*='gdpr-banner' i], [class*='gdpr-modal' i], [id*='gdpr-banner' i]", "confidence": 0.85 },
+          { "vendor": "Privy",         "selector": "[id^='privy-' i], .privy-popup, .privy-form-styling, .privy-block-state, [class^='privy-' i]", "confidence": 0.92 },
+          { "vendor": "Klaviyo",       "selector": "[class*='klaviyo-form' i], .needsclick.klaviyo-form, [data-klaviyo-form], .kl-private-reset-css-Xuajs1", "confidence": 0.92 },
+          { "vendor": "Mailchimp",     "selector": "#mc_embed_signup, .mc-modal, .mc-modal-overlay, #mc-modal", "confidence": 0.9 },
+          { "vendor": "Justuno",       "selector": "[id^='juno' i], .juno-overlay, .juno-modal, [class^='juno-' i]", "confidence": 0.9 },
+          { "vendor": "OptiMonk",      "selector": "[class^='om-' i], .om-position-popup, .om-elements-container, [id^='om-']", "confidence": 0.85 },
+          { "vendor": "Wisepops",      "selector": "[id^='wisepops' i], .wisepops-popup, [class^='wisepops-' i]", "confidence": 0.92 },
+          { "vendor": "Sumo / Sumome", "selector": ".sumome-react-wysiwyg-popup-overlay, [class^='sumo-' i], [id^='sumo']", "confidence": 0.9 },
+          { "vendor": "Poptin",        "selector": "[id^='poptin' i], [class^='poptin-' i], .poptin-popup-container", "confidence": 0.9 },
+          { "vendor": "Hello Bar",     "selector": ".hellobar-container, .hello-bar-wrapper, [class^='hellobar-' i]", "confidence": 0.9 },
+          { "vendor": "OptinMonster",  "selector": "[id^='om-'][id*='monster'], .OptinMonster-html, [class*='OptinMonster' i]", "confidence": 0.9 },
+          { "vendor": "Shopify cart drawer", "selector": "#cart-drawer, .cart-drawer, .drawer--cart, [data-cart-drawer]", "confidence": 0.85 },
+          { "vendor": "Shopify search modal", "selector": "#search-modal, .search-modal, predictive-search[open]", "confidence": 0.85 }
+        ]
+      }
+    },
+    {
+      "id": "class-name-pattern",
+      "enabled": true,
+      "weight": 1.2,
+      "config": {
+        "patterns": [
+          { "pattern": "(^|[\\s_-])modal($|[\\s_-])",         "confidence": 0.9 },
+          { "pattern": "(^|[\\s_-])popup($|[\\s_-])",         "confidence": 0.9 },
+          { "pattern": "(^|[\\s_-])overlay($|[\\s_-])",       "confidence": 0.7 },
+          { "pattern": "(^|[\\s_-])lightbox($|[\\s_-])",      "confidence": 0.85 },
+          { "pattern": "(^|[\\s_-])backdrop($|[\\s_-])",      "confidence": 0.6 },
+          { "pattern": "cookie[-_]?(banner|consent|notice|bar|policy|disclaimer|bot)", "confidence": 0.92 },
+          { "pattern": "gdpr[-_]?(banner|consent|notice|popup|modal)?", "confidence": 0.92 },
+          { "pattern": "ccpa[-_]?(banner|consent|notice|popup|modal)?", "confidence": 0.92 },
+          { "pattern": "newsletter[-_]?(signup|popup|modal|optin)",    "confidence": 0.92 },
+          { "pattern": "(^|[\\s_-])consent[-_]?(banner|popup|notice|modal|bar)?", "confidence": 0.92 },
+          { "pattern": "(^|[\\s_-])paywall($|[\\s_-])",       "confidence": 0.92 },
+          { "pattern": "(^|[\\s_-])interstitial($|[\\s_-])",  "confidence": 0.85 },
+          { "pattern": "(^|[\\s_-])(exit|exit[-_]?intent)[-_]?(popup|modal)?", "confidence": 0.92 },
+          { "pattern": "(^|[\\s_-])subscribe[-_]?(popup|modal|prompt)", "confidence": 0.92 },
+          { "pattern": "(^|[\\s_-])login[-_]?(modal|popup|prompt|dialog|overlay|form)", "confidence": 0.92 },
+          { "pattern": "(^|[\\s_-])sign[-_]?in[-_]?(modal|popup|prompt|dialog|overlay|form)", "confidence": 0.92 },
+          { "pattern": "(^|[\\s_-])sign[-_]?up[-_]?(modal|popup|prompt|dialog|overlay|form)", "confidence": 0.92 },
+          { "pattern": "(^|[\\s_-])signup[-_]?(modal|popup|prompt|dialog|overlay|form)", "confidence": 0.92 },
+          { "pattern": "(^|[\\s_-])register[-_]?(modal|popup|prompt|dialog|overlay|form)", "confidence": 0.92 },
+          { "pattern": "(^|[\\s_-])registration[-_]?(modal|popup|prompt|dialog|overlay|form)", "confidence": 0.92 },
+          { "pattern": "(^|[\\s_-])auth[-_]?(modal|popup|prompt|dialog|overlay)", "confidence": 0.92 },
+          { "pattern": "(^|[\\s_-])account[-_]?(create|modal|popup|prompt|dialog)", "confidence": 0.92 },
+          { "pattern": "create[-_]?account", "confidence": 0.92 },
+          { "pattern": "(^|[\\s_-])join[-_]?(modal|popup|prompt|us|now)", "confidence": 0.88 }
+        ]
+      }
+    },
+    {
+      "id": "full-viewport-overlay",
+      "enabled": true,
+      "weight": 0.8,
+      "config": {
+        "minZIndex": 100,
+        "fixedPositionRequired": true
+      }
+    }
+  ],
+  "decision": {
+    "minScore": 1.0
+  },
+  "preserve": {
+    "selectors": [
+      "[data-modalmodules-keep]",
+      "html", "body", "head", "main",
+      "header", "nav", "footer", "article", "section", "aside"
+    ]
+  },
+  "cleanup": {
+    "unlockScroll": {
+      "targets": "html, body",
+      "removeClasses": [
+        "modal-open", "modal-active", "modal-visible", "modal-shown", "modal-is-open",
+        "is-modal-open", "is-popup-open", "is-locked", "is-scroll-locked",
+        "no-scroll", "noscroll", "no-scrolling", "scroll-lock", "scroll-disabled", "scroll-locked", "stop-scrolling",
+        "overflow-hidden", "lock-scroll", "body-lock", "body--modal-open", "body--popup-open",
+        "popup-open", "popup-active", "popup-visible", "popup-shown",
+        "menu-open", "drawer-open", "drawer-active", "mobile-menu-open", "off-canvas-open",
+        "fancybox-lock", "fancybox-active", "fancybox-margin", "fancybox-iosfix",
+        "compensate-for-scrollbar",
+        "ReactModal__Body--open",
+        "swal2-shown", "swal2-height-auto", "swal2-no-backdrop", "swal2-toast-shown",
+        "mfp-zoom-out-cur", "mfp-ready",
+        "tingle-enabled",
+        "u-modal-open",
+        "js-modal-open", "js-popup-open", "js-no-scroll",
+        "has-modal", "has-popup", "has-overlay",
+        "ot-host-open", "onetrust-pc-open",
+        "cookieConsentVisible", "show-cookie-banner",
+        "wp-cookies-shown",
+        "body--locked", "body-locked", "body--fixed",
+        "cart-open", "cart-drawer-open", "cart-drawer-is-open",
+        "menu-drawer-open", "header-menu-open", "mobile-nav-open",
+        "search-modal-open", "predictive-search-active",
+        "quickview-open", "quick-view-active", "quick-view-open",
+        "js-drawer-open", "js-drawer-open-left", "js-drawer-open-right",
+        "modal--open", "modal--active",
+        "atc-popup-open", "atc-modal-open",
+        "klaviyo-popup-open", "privy-popup-open", "om-popup-open"
+      ],
+      "removeStyleProperties": [
+        "overflow", "overflow-y", "overflow-x",
+        { "prop": "position", "ifValue": "fixed" },
+        { "prop": "top", "ifSiblingProp": { "position": "fixed" } },
+        { "prop": "left", "ifSiblingProp": { "position": "fixed" } },
+        { "prop": "width", "ifSiblingProp": { "position": "fixed" } },
+        "padding-right",
+        "touch-action"
+      ]
+    },
+    "removeOrphans": {
+      "selectors": [
+        ".modal-backdrop",
+        ".modal-overlay",
+        ".fancybox-overlay",
+        ".fancybox-outer",
+        ".mfp-bg",
+        ".mfp-wrap",
+        ".swal2-container",
+        ".swal2-backdrop-show",
+        ".ReactModal__Overlay",
+        ".onetrust-pc-dark-filter",
+        "#CybotCookiebotDialogBodyUnderlay",
+        ".sp_veil",
+        ".klaviyo-form-overlay",
+        ".privy-overlay-shown",
+        ".juno-overlay",
+        ".om-elements-overlay",
+        ".wisepops-overlay",
+        ".poptin-overlay",
+        ".OptinMonster-html",
+        ".drawer__overlay", ".cart-drawer__overlay", ".menu-drawer__overlay",
+        ".overlay--drawer", ".js-drawer-overlay"
+      ]
+    },
+    "injectScrollUnlock": true
+  },
+  "autoAccept": {
+    "buttonSelectors": [
+      { "vendor": "OneTrust",          "selector": "#onetrust-accept-btn-handler, .save-preference-btn-handler.onetrust-close-btn-handler" },
+      { "vendor": "Cookiebot",         "selector": "#CybotCookiebotDialogBodyLevelButtonAccept, #CybotCookiebotDialogBodyLevelButtonLevelOptinAllowAll, #CybotCookiebotDialogBodyButtonAccept" },
+      { "vendor": "Didomi",            "selector": "#didomi-notice-agree-button" },
+      { "vendor": "Usercentrics",      "selector": "[data-testid='uc-accept-all-button'], button[data-testid*='accept-all']" },
+      { "vendor": "Quantcast",         "selector": ".qc-cmp2-summary-buttons button[mode='primary']" },
+      { "vendor": "TrustArc",          "selector": ".required-consent-btn-handler, .call.preference-button-handler" },
+      { "vendor": "Osano",             "selector": ".osano-cm-accept-all" },
+      { "vendor": "CookieYes",         "selector": ".cky-btn-accept, .cky-btn-accept-all" },
+      { "vendor": "Iubenda",           "selector": ".iubenda-cs-accept-btn, #iubenda-cs-accept-btn" },
+      { "vendor": "HubSpot",           "selector": "#hs-eu-confirmation-button" },
+      { "vendor": "CookieHub",         "selector": "#ch2-allow-all-button, .ch2-btn-primary" },
+      { "vendor": "Cookie Information","selector": "#coiConsentBannerAcceptCategoriesButton" },
+      { "vendor": "Tealium",           "selector": "#consent_prompt_submit" },
+      { "vendor": "Borlabs",           "selector": "._brlbs-btn-accept-all" },
+      { "vendor": "Klaro",             "selector": ".cm-btn-accept-all" },
+      { "vendor": "Sourcepoint",       "selector": ".message-component.message-button.bordered" },
+      { "vendor": "Termly",            "selector": "[data-tid='banner-accept'], .t-acceptAllButton" }
+    ],
+    "declineSelectors": [
+      { "vendor": "OneTrust",          "selector": "#onetrust-reject-all-handler, .onetrust-reject-all-handler" },
+      { "vendor": "Cookiebot",         "selector": "#CybotCookiebotDialogBodyButtonDecline, #CybotCookiebotDialogBodyLevelButtonLevelOptinDeclineAll" },
+      { "vendor": "Didomi",            "selector": "#didomi-notice-disagree-button" },
+      { "vendor": "Usercentrics",      "selector": "[data-testid='uc-deny-all-button'], button[data-testid*='deny-all']" },
+      { "vendor": "Quantcast",         "selector": ".qc-cmp2-summary-buttons button[mode='secondary']" },
+      { "vendor": "Osano",             "selector": ".osano-cm-denyAll" },
+      { "vendor": "CookieYes",         "selector": ".cky-btn-reject" },
+      { "vendor": "Iubenda",           "selector": ".iubenda-cs-reject-btn, #iubenda-cs-reject-btn" },
+      { "vendor": "CookieHub",         "selector": "#ch2-deny-all-button" },
+      { "vendor": "Cookie Information","selector": "#declineButton, #coiConsentBannerDeclineButton" },
+      { "vendor": "Borlabs",           "selector": "._brlbs-btn-refuse-all" },
+      { "vendor": "Klaro",             "selector": ".cm-btn-decline, .cm-btn-decline-all" },
+      { "vendor": "Sourcepoint",       "selector": ".sp_choice_type_REJECT_ALL" },
+      { "vendor": "Termly",            "selector": "[data-tid='banner-decline'], .t-declineAllButton" }
+    ],
+    "textFallback": {
+      "scopeSelector": "[class*='cookie' i], [class*='consent' i], [class*='gdpr' i], [class*='ccpa' i], [class*='cmp' i], [class*='cookiebanner' i], [class*='cookie-bar' i], [id*='cookie' i], [id*='consent' i], [id*='gdpr' i], [id*='cmp' i], [role='dialog'], [aria-modal='true']",
+      "maxClicks": 1,
+      "patterns": [
+        "accept all", "accept all cookies", "accept cookies", "accept",
+        "allow all", "allow all cookies", "allow cookies", "allow",
+        "i accept", "i agree", "agree", "agree to all", "agree and continue",
+        "got it", "ok", "okay", "yes, i accept", "yes",
+        "consent", "i consent",
+        "aceptar todo", "aceptar todas", "aceptar",
+        "tout accepter", "accepter tout", "accepter",
+        "alle akzeptieren", "akzeptieren", "einverstanden", "zustimmen",
+        "accetta tutto", "accetta", "accetto",
+        "aceitar tudo", "aceitar todos", "aceitar",
+        "alle accepteren", "accepteren",
+        "zaakceptuj wszystko", "zaakceptuj", "akceptuję",
+        "принять", "принять все", "соглашаюсь"
+      ],
+      "denyWords": [
+        "reject", "decline", "refuse", "deny", "disagree",
+        "manage", "settings", "preferences", "customize", "customise", "options", "configure",
+        "more info", "learn more", "show details", "details", "more details", "show me",
+        "necessary only", "essential only", "only necessary", "only essential", "necessary",
+        "required only", "strictly necessary",
+        "save my preferences", "save preferences", "save my choices", "save",
+        "selection", "selected",
+        "rechazar", "rechazar todas",
+        "refuser", "tout refuser", "gérer",
+        "ablehnen", "alle ablehnen", "einstellungen", "verwalten",
+        "rifiuta", "rifiuta tutto", "gestisci",
+        "rejeitar", "rejeitar todos", "gerenciar",
+        "weigeren", "alles weigeren", "beheren",
+        "odrzucam", "odrzuć", "zarządzaj",
+        "отклонить", "управление", "настройки"
+      ]
+    },
+    "waitAfterClickMs": 300
+  }
+}

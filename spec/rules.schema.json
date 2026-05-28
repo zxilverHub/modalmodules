@@ -1,0 +1,178 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ModalModules Rule Config",
+  "type": "object",
+  "required": ["version", "detectors", "decision"],
+  "properties": {
+    "version": { "type": "integer", "const": 1 },
+    "candidateSelector": {
+      "type": "string",
+      "description": "CSS selector limiting which nodes are evaluated. Wider = catches more, slower. Narrow it as you learn which selectors are real positives."
+    },
+    "detectors": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "enabled"],
+        "properties": {
+          "id": { "type": "string", "description": "Must match a key in src/core/detectors/index.js" },
+          "enabled": { "type": "boolean" },
+          "weight": { "type": "number", "minimum": 0, "default": 1.0 },
+          "config": { "type": "object", "description": "Detector-specific config (regex lists, thresholds, etc.)" }
+        }
+      }
+    },
+    "decision": {
+      "type": "object",
+      "required": ["minScore"],
+      "properties": {
+        "minScore": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Sum of (weight * confidence) across matched detectors must reach this to be considered a modal. Definitive detectors bypass this."
+        }
+      }
+    },
+    "preserve": {
+      "type": "object",
+      "properties": {
+        "selectors": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Nodes matching any of these selectors are never removed, even if detectors flag them."
+        }
+      }
+    },
+    "autoAccept": {
+      "type": "object",
+      "description": "Browser-only feature: instead of removing the cookie modal, click the site's own Accept button so the site handles its own close (releasing scroll lock, persisting consent, etc.). Activated by passing { autoAccept: true } to removeModals() in the browser API. Has no effect on server-side HTTP cleaning (no JS execution there).",
+      "properties": {
+        "buttonSelectors": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["selector"],
+            "properties": {
+              "vendor": { "type": "string" },
+              "selector": { "type": "string" }
+            }
+          },
+          "description": "Per-vendor CSS selectors for the Accept-all button. Tried in order; all matches are clicked."
+        },
+        "declineSelectors": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["selector"],
+            "properties": {
+              "vendor": { "type": "string" },
+              "selector": { "type": "string" }
+            }
+          },
+          "description": "Per-vendor CSS selectors for the Reject/Decline button. Used when preferences.cookies = 'decline'. The site's own decline handler runs (records 'rejected' state, releases scroll lock)."
+        },
+        "waitAfterClickMs": {
+          "type": "number",
+          "description": "Milliseconds to wait after clicking to let the site's close animation run before evaluating what (if anything) is left to manually remove. Default 300."
+        },
+        "textFallback": {
+          "type": "object",
+          "description": "Fallback strategy when no vendor selector matches: scan visible button text inside cookie/consent containers and click any whose text matches one of the configured patterns. Includes deny-word safety to avoid clicking 'Reject all', 'Manage preferences', etc.",
+          "properties": {
+            "scopeSelector": {
+              "type": "string",
+              "description": "CSS selector for containers within which buttons are eligible. Restricts text matching to cookie/consent banners only — prevents accidentally clicking 'Accept terms' on checkout pages."
+            },
+            "maxClicks": {
+              "type": "number",
+              "description": "Max number of buttons to click per pass. Default 1 — most pages need only one Accept click."
+            },
+            "patterns": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "Case-insensitive button text patterns to match (textContent, value attr, aria-label). Exact-match preferred; falls back to short-haystack contains-match."
+            },
+            "denyWords": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "Words that, if present in button text, exclude the button from matching. Catches 'Reject all', 'Manage settings', 'Necessary only', etc."
+            }
+          }
+        }
+      }
+    },
+    "cleanup": {
+      "type": "object",
+      "description": "Runs after main removal IF at least one modal was removed. Restores scroll on html/body and sweeps orphan backdrop/wrapper nodes that survive as siblings of the removed modal.",
+      "properties": {
+        "unlockScroll": {
+          "type": "object",
+          "properties": {
+            "targets": {
+              "type": "string",
+              "description": "CSS selector for the nodes to unlock. Default: 'html, body'."
+            },
+            "removeClasses": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "Class names to strip from target nodes (e.g. 'modal-open', 'no-scroll')."
+            },
+            "removeStyleProperties": {
+              "type": "array",
+              "description": "Inline style properties to strip from target nodes. Each item is either a property name string (always stripped if present) OR an object with conditions: { prop, ifValue?, ifSiblingProp? }. Conditional form lets you strip 'position' only when it equals 'fixed' (iOS scroll-lock signature) rather than always — avoids breaking sites with legitimate 'body { position: relative }'.",
+              "items": {
+                "oneOf": [
+                  { "type": "string" },
+                  {
+                    "type": "object",
+                    "required": ["prop"],
+                    "properties": {
+                      "prop": {
+                        "type": "string",
+                        "description": "The CSS property name to strip."
+                      },
+                      "ifValue": {
+                        "type": "string",
+                        "description": "Only strip if the property currently equals this value (e.g. 'fixed' for position)."
+                      },
+                      "ifSiblingProp": {
+                        "type": "object",
+                        "description": "Only strip if all of these other properties on the SAME node match the given values (snapshotted before stripping begins). Used e.g. to strip 'top' only when 'position: fixed' is also set.",
+                        "additionalProperties": { "type": "string" }
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "removeOrphans": {
+          "type": "object",
+          "properties": {
+            "selectors": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "CSS selectors for orphan backdrop/wrapper nodes to sweep (e.g. '.modal-backdrop')."
+            }
+          }
+        },
+        "injectScrollUnlock": {
+          "description": "Inject a <style> tag with !important overrides as a last-resort scroll restorer. Catches the case where overflow:hidden lives in a <style> block or external stylesheet (not in class/inline attributes that we can strip). true = inject default CSS; false = skip; object = use { css } as the override.",
+          "oneOf": [
+            { "type": "boolean" },
+            {
+              "type": "object",
+              "properties": {
+                "css": {
+                  "type": "string",
+                  "description": "Custom CSS to inject. Default: 'html,body{overflow-y:auto!important;}'."
+                }
+              }
+            }
+          ]
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "$schema": "./user-preferences.schema.json",
+  "version": 1,
+  "popups": "remove",
+  "cookies": "accept",
+  "authModals": "remove"
+}

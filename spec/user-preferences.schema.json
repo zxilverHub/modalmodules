@@ -1,0 +1,25 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ModalModules User Preferences",
+  "description": "End-user preferences for how to handle each modal category. Separate from rules.default.json (which describes *detection*) — this file describes *intent*: what should happen when something is detected.",
+  "type": "object",
+  "required": ["version", "popups", "cookies", "authModals"],
+  "properties": {
+    "version": { "type": "integer", "const": 1 },
+    "popups": {
+      "type": "string",
+      "enum": ["remove", "ignore"],
+      "description": "Newsletter signups, exit-intent popups, paywalls, and generic modal overlays. 'remove' = strip from DOM/HTML; 'ignore' = leave alone."
+    },
+    "cookies": {
+      "type": "string",
+      "enum": ["accept", "decline", "remove", "ignore"],
+      "description": "Cookie consent banners. 'accept' = click the site's Accept button (browser only — site records consent properly); 'decline' = click the Reject button (browser only); 'remove' = strip from DOM (consent NOT recorded — banner reappears next visit); 'ignore' = leave alone."
+    },
+    "authModals": {
+      "type": "string",
+      "enum": ["remove", "ignore"],
+      "description": "Login / sign-up / create-account / registration modals. 'remove' = strip from DOM/HTML; 'ignore' = leave alone (useful if your scraper actually needs to log in)."
+    }
+  }
+}
